@@ -531,7 +531,7 @@ export class UI {
       } else {
         const b = sim.buildingInfo(sel.id);
         const facts = [['Height', `${inf.h.toFixed(0)} m, ${b.storeys} ${b.storeys === 1 ? 'storey' : 'storeys'}`], ['Ground', `${b.ground.toFixed(2)} m NAVD88 (model cell)`]];
-        if (b.arch) facts.push(['Type', b.archLabel], ['First Floor', `${b.ffh.toFixed(1)} m above ground`], ['Value', `${fmtMoney(b.vs)} structure, ${fmtMoney(b.vc)} contents`], ['Residents', b.pop ? fmtInt(b.pop) : 'None recorded']);
+        if (b.arch) facts.push(['Damage Curve', b.archLabel], ['First Floor', `${b.ffh.toFixed(1)} m above ground`], ['Value', `${fmtMoney(b.vs)} structure, ${fmtMoney(b.vc)} contents`], ['Residents', b.pop ? fmtInt(b.pop) : 'None recorded']);
         wrap.append(h('div', { class: 'block' }, h('div', { class: 'block-title big', text: cls }), h('div', { class: 'block-sub', text: `${b.nta || ''}, ${b.boro}` }),
           h('dl', { class: 'facts' }, ...facts.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', { text: v })])),
           h('button', { type: 'button', class: 'link-btn', text: 'Fly to this building', onclick: () => app.flyToBuilding(sel) })));
