@@ -14,7 +14,7 @@ A city-wide flood model of New York City that runs in the browser. It solves the
 - **Tests scenarios:** Sandy with 2050s and 2100s sea level rise, a long nor'easter, the NYC DEP moderate and extreme stormwater scenarios, Hurricane Ida's rainfall and a compound storm, with surge, tide timing, sea level rise, rainfall, sewer capacity, roughness and grid size all editable.
 - **Tests defences:** waterfront walls along any borough at a chosen crest, and barriers drawn on the map.
 - **Estimates impact:** damage ratios from FloodVuln Global for the 730,000 buildings with National Structure Inventory values, totals by borough and for 262 neighborhoods, residents affected, subway stations and hospitals reached by water.
-- **Shows it in 3D:** streamed building tiles with procedural facades and night lighting, every tower 40 m and over always on the skyline, 652,000 street trees in late October colour, aerial imagery, a reflective water surface with waves, foam and flow tracers, and the storm's own clock for daylight and dark.
+- **Shows it in 3D:** streamed building tiles with procedural facades and night lighting, every tower 40 m and over always on the skyline, the harbour's bridges with their towers, cables and night lights, rooftop water tanks, 652,000 street trees in late October colour, aerial imagery, a reflective water surface with waves, foam and flow tracers, and the storm's own clock for daylight and dark.
 - **Runs on ordinary hardware:** the page picks its quality from the graphics card and adjusts the resolution to hold the frame rate.
 
 ## Running Locally
@@ -47,11 +47,13 @@ python scripts/fetch_dem.py          # USGS 3DEP 1/3 arc-second tiles
 python scripts/fetch_imagery.py      # USGS National Map imagery tiles
 python scripts/fetch_buildings.py nyc
 python scripts/fetch_context.py      # OpenStreetMap buildings across the rivers
+python scripts/fetch_bridges.py      # OpenStreetMap bridges
 python scripts/fetch_nsi.py          # National Structure Inventory, five counties
 python scripts/fetch_events.py       # gauges, Atlas 14, high-water marks
 python scripts/fetch_vectors.py      # boundaries, Sandy zone, subway, hospitals, trees, FEMA
 python scripts/build_terrain.py
 python scripts/build_city.py
+python scripts/build_bridges.py
 python scripts/build_events.py
 python scripts/build_meta.py
 python tests/run_scenario.py sandy 40    # also 80 and 20

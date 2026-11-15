@@ -7,6 +7,7 @@ import { City } from './scene/city.js';
 import { Water } from './scene/water.js';
 import { Tracers } from './scene/tracers.js';
 import { Markers } from './scene/markers.js';
+import { Bridges } from './scene/bridges.js';
 import { Simulation } from './sim.js';
 import { presetById } from './scenarios.js';
 import { Labels } from './labels.js';
@@ -107,6 +108,7 @@ class App {
       $('#loader-text').textContent = label;
     });
     this.validation = await fetch('data/validation.json').then(r => (r.ok ? r.json() : null)).catch(() => null);
+    const bridgeData = await fetch('data/bridges.json').then(r => (r.ok ? r.json() : null)).catch(() => null);
     this.data = data;
     this.geo = makeGeo(data.meta);
     const W = data.meta.grid.width_m, H = data.meta.grid.height_m;
@@ -137,6 +139,7 @@ class App {
     const tracers = this.tracers = new Tracers(viewer.renderer, shared);
     const sc = viewer.scene;
     sc.add(terrain.group, city.group, makeApron(W, H, shared));
+    if (bridgeData) { this.bridges = new Bridges(bridgeData, W, H); sc.add(this.bridges.group); }
     for (const o of [water.group, tracers.mesh]) { o.traverse(x => x.layers.set(1)); sc.add(o); }
     markers.group.traverse(x => x.layers.set(3)); sc.add(markers.group);
     viewer.sun.shadow.camera.layers.enableAll();
@@ -551,6 +554,7 @@ class App {
     this.water.update(cam);
     this.city.update(cam, t);
     this.markers.update(cam, gauges);
+    this.bridges?.update(sh.uNight.value, cam);
     v.render(t);
     this.labels.setGaugeLevels(gauges);
     this.labels.update(this.markers);
