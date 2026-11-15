@@ -1,0 +1,1460 @@
+{
+ "ok": true,
+ "preset": "sandy",
+ "dx": 20,
+ "nx": 2448,
+ "ny": 2544,
+ "cells": 6227712,
+ "steps": 74597,
+ "simSeconds": 43200,
+ "minCoastZ": -42.970001220703125,
+ "hwm": [
+  {
+   "id": 6354,
+   "obs": 3.414,
+   "sim": 3.522,
+   "boro": 1,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6371,
+   "obs": 3.292,
+   "sim": 3.429,
+   "boro": 1,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6249,
+   "obs": 3.414,
+   "sim": 3.414,
+   "boro": 3,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6416,
+   "obs": 3.566,
+   "sim": 3.377,
+   "boro": 5,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6414,
+   "obs": 3.871,
+   "sim": null,
+   "boro": 5,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6400,
+   "obs": 3.139,
+   "sim": 3.256,
+   "boro": 4,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6300,
+   "obs": 3.17,
+   "sim": 3.215,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6250,
+   "obs": 3.414,
+   "sim": 3.42,
+   "boro": 3,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6348,
+   "obs": 3.444,
+   "sim": 3.438,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6408,
+   "obs": 4.023,
+   "sim": null,
+   "boro": 5,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6094,
+   "obs": 2.987,
+   "sim": 3.38,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6105,
+   "obs": 3.749,
+   "sim": null,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6341,
+   "obs": 3.383,
+   "sim": 3.417,
+   "boro": 1,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6263,
+   "obs": 3.353,
+   "sim": 3.245,
+   "boro": 4,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6372,
+   "obs": 2.896,
+   "sim": 3.247,
+   "boro": 1,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6352,
+   "obs": 3.383,
+   "sim": 3.441,
+   "boro": 1,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6087,
+   "obs": 3.536,
+   "sim": 3.353,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6386,
+   "obs": 3.322,
+   "sim": 3.276,
+   "boro": 4,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6554,
+   "obs": 3.109,
+   "sim": 3.091,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6220,
+   "obs": 3.261,
+   "sim": 3.109,
+   "boro": 2,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6365,
+   "obs": 3.444,
+   "sim": null,
+   "boro": 1,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6221,
+   "obs": 3.17,
+   "sim": 3.083,
+   "boro": 2,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6344,
+   "obs": 3.536,
+   "sim": 3.444,
+   "boro": 1,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6096,
+   "obs": 2.652,
+   "sim": 3.2,
+   "boro": 0,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6356,
+   "obs": 3.414,
+   "sim": 3.433,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6345,
+   "obs": 3.475,
+   "sim": 3.444,
+   "boro": 1,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6104,
+   "obs": 3.81,
+   "sim": null,
+   "boro": 0,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6245,
+   "obs": 3.444,
+   "sim": 3.388,
+   "boro": 3,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6222,
+   "obs": 3.109,
+   "sim": null,
+   "boro": 2,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6269,
+   "obs": 3.231,
+   "sim": 3.253,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6086,
+   "obs": 3.353,
+   "sim": 3.3,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6396,
+   "obs": 3.292,
+   "sim": 3.252,
+   "boro": 4,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6216,
+   "obs": 2.957,
+   "sim": 3.231,
+   "boro": 2,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6362,
+   "obs": 3.322,
+   "sim": 3.423,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6063,
+   "obs": 2.256,
+   "sim": 2.504,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6095,
+   "obs": 2.53,
+   "sim": 3.21,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6347,
+   "obs": 3.353,
+   "sim": 3.438,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6251,
+   "obs": 3.353,
+   "sim": 3.446,
+   "boro": 3,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6219,
+   "obs": 3.139,
+   "sim": null,
+   "boro": 2,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6342,
+   "obs": 3.353,
+   "sim": 3.438,
+   "boro": 1,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6393,
+   "obs": 3.139,
+   "sim": 3.242,
+   "boro": 4,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6209,
+   "obs": 3.566,
+   "sim": 3.326,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6397,
+   "obs": 3.261,
+   "sim": 3.251,
+   "boro": 4,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6282,
+   "obs": 3.292,
+   "sim": 3.085,
+   "boro": 0,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6097,
+   "obs": 2.804,
+   "sim": 3.205,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6265,
+   "obs": 3.048,
+   "sim": 3.227,
+   "boro": 3,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6256,
+   "obs": 3.353,
+   "sim": 3.425,
+   "boro": 3,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6091,
+   "obs": 3.231,
+   "sim": 3.411,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6089,
+   "obs": 3.627,
+   "sim": 3.356,
+   "boro": 0,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6390,
+   "obs": 3.292,
+   "sim": 3.091,
+   "boro": 4,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6302,
+   "obs": 2.987,
+   "sim": 3.217,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6383,
+   "obs": 3.139,
+   "sim": 3.081,
+   "boro": 4,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6258,
+   "obs": 3.505,
+   "sim": 3.416,
+   "boro": 3,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6405,
+   "obs": 3.81,
+   "sim": null,
+   "boro": 5,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6065,
+   "obs": 2.896,
+   "sim": 3.354,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6413,
+   "obs": 3.81,
+   "sim": 3.287,
+   "boro": 5,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6262,
+   "obs": 3.322,
+   "sim": 3.554,
+   "boro": 3,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6260,
+   "obs": 3.505,
+   "sim": 3.069,
+   "boro": 3,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6382,
+   "obs": 3.261,
+   "sim": 3.232,
+   "boro": 4,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6337,
+   "obs": 3.292,
+   "sim": 3.389,
+   "boro": 1,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6334,
+   "obs": 2.896,
+   "sim": 3.331,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6100,
+   "obs": 3.719,
+   "sim": 2.739,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6257,
+   "obs": 3.414,
+   "sim": 3.416,
+   "boro": 3,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6369,
+   "obs": 2.987,
+   "sim": 3.421,
+   "boro": 1,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6093,
+   "obs": 3.078,
+   "sim": 3.393,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6373,
+   "obs": 2.743,
+   "sim": 3.226,
+   "boro": 1,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6418,
+   "obs": 3.505,
+   "sim": 3.352,
+   "boro": 5,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6217,
+   "obs": 3.018,
+   "sim": 3.238,
+   "boro": 2,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6259,
+   "obs": 3.932,
+   "sim": 3.339,
+   "boro": 3,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6355,
+   "obs": 3.383,
+   "sim": 3.522,
+   "boro": 1,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6268,
+   "obs": 3.871,
+   "sim": 3.252,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6407,
+   "obs": 4.023,
+   "sim": 3.276,
+   "boro": 5,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6387,
+   "obs": 3.322,
+   "sim": 3.245,
+   "boro": 4,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6375,
+   "obs": 3.139,
+   "sim": 3.238,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6247,
+   "obs": 3.353,
+   "sim": 3.263,
+   "boro": 3,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6350,
+   "obs": 3.414,
+   "sim": 3.449,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6301,
+   "obs": 3.109,
+   "sim": 3.221,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6279,
+   "obs": 4.755,
+   "sim": null,
+   "boro": 0,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6364,
+   "obs": 3.322,
+   "sim": 3.435,
+   "boro": 1,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6255,
+   "obs": 2.987,
+   "sim": 3.408,
+   "boro": 3,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6064,
+   "obs": 3.597,
+   "sim": 1.62,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6264,
+   "obs": 3.414,
+   "sim": 3.257,
+   "boro": 3,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6261,
+   "obs": 3.505,
+   "sim": 3.283,
+   "boro": 3,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6391,
+   "obs": 3.231,
+   "sim": 3.082,
+   "boro": 4,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6555,
+   "obs": 3.597,
+   "sim": 3.193,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6415,
+   "obs": 4.663,
+   "sim": 3.347,
+   "boro": 5,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6080,
+   "obs": 2.865,
+   "sim": 3.332,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6399,
+   "obs": 3.414,
+   "sim": 3.251,
+   "boro": 4,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6411,
+   "obs": 3.993,
+   "sim": 3.278,
+   "boro": 5,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6361,
+   "obs": 3.353,
+   "sim": 3.423,
+   "boro": 1,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6404,
+   "obs": 3.749,
+   "sim": 2.933,
+   "boro": 5,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6253,
+   "obs": 3.78,
+   "sim": 3.309,
+   "boro": 3,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6368,
+   "obs": 3.231,
+   "sim": 3.46,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6394,
+   "obs": 3.139,
+   "sim": 3.242,
+   "boro": 4,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6384,
+   "obs": 3.078,
+   "sim": 3.101,
+   "boro": 4,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6401,
+   "obs": 2.743,
+   "sim": 3.256,
+   "boro": 4,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6211,
+   "obs": 3.688,
+   "sim": 3.291,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6419,
+   "obs": 4.267,
+   "sim": null,
+   "boro": 5,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6340,
+   "obs": 3.383,
+   "sim": 3.388,
+   "boro": 1,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6218,
+   "obs": 3.231,
+   "sim": 3.161,
+   "boro": 2,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6079,
+   "obs": 3.536,
+   "sim": 3.297,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6363,
+   "obs": 3.322,
+   "sim": null,
+   "boro": 1,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6299,
+   "obs": 2.682,
+   "sim": 2.796,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6085,
+   "obs": 3.2,
+   "sim": 3.421,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6358,
+   "obs": 3.322,
+   "sim": 3.426,
+   "boro": 1,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6246,
+   "obs": 3.322,
+   "sim": 3.345,
+   "boro": 3,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6090,
+   "obs": 3.17,
+   "sim": 3.431,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6389,
+   "obs": 3.2,
+   "sim": 3.199,
+   "boro": 4,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6366,
+   "obs": 3.383,
+   "sim": 3.432,
+   "boro": 1,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6343,
+   "obs": 3.414,
+   "sim": 3.433,
+   "boro": 1,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6417,
+   "obs": 3.566,
+   "sim": 3.375,
+   "boro": 5,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6062,
+   "obs": 2.499,
+   "sim": null,
+   "boro": 0,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6336,
+   "obs": 3.17,
+   "sim": 3.403,
+   "boro": 1,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6248,
+   "obs": 3.444,
+   "sim": 3.434,
+   "boro": 3,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6398,
+   "obs": 3.871,
+   "sim": 3.261,
+   "boro": 4,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6381,
+   "obs": 2.377,
+   "sim": 2.93,
+   "boro": 4,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6254,
+   "obs": 3.444,
+   "sim": 3.43,
+   "boro": 3,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6406,
+   "obs": 3.993,
+   "sim": 3.273,
+   "boro": 5,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6349,
+   "obs": 3.383,
+   "sim": 3.449,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6380,
+   "obs": 3.322,
+   "sim": 3.342,
+   "boro": 4,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6351,
+   "obs": 3.414,
+   "sim": 3.449,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6280,
+   "obs": 2.957,
+   "sim": 3.088,
+   "boro": 0,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6210,
+   "obs": 3.627,
+   "sim": null,
+   "boro": 0,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6374,
+   "obs": 3.383,
+   "sim": 3.255,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6359,
+   "obs": 3.322,
+   "sim": 3.426,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6360,
+   "obs": 3.322,
+   "sim": 3.423,
+   "boro": 1,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6281,
+   "obs": 3.048,
+   "sim": 3.089,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6103,
+   "obs": 3.871,
+   "sim": null,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6061,
+   "obs": 2.499,
+   "sim": null,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6277,
+   "obs": 3.109,
+   "sim": null,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6346,
+   "obs": 3.048,
+   "sim": 3.438,
+   "boro": 1,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6088,
+   "obs": 3.871,
+   "sim": 3.364,
+   "boro": 0,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6409,
+   "obs": 3.962,
+   "sim": 3.28,
+   "boro": 5,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6338,
+   "obs": 3.444,
+   "sim": 3.355,
+   "boro": 1,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6335,
+   "obs": 3.749,
+   "sim": 3.421,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6339,
+   "obs": 3.475,
+   "sim": 3.36,
+   "boro": 1,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6367,
+   "obs": 3.322,
+   "sim": 3.44,
+   "boro": 1,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6333,
+   "obs": 3.17,
+   "sim": 3.263,
+   "boro": 1,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6083,
+   "obs": 3.078,
+   "sim": 3.406,
+   "boro": 0,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6252,
+   "obs": 3.322,
+   "sim": 3.446,
+   "boro": 3,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6392,
+   "obs": 3.2,
+   "sim": 3.127,
+   "boro": 4,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6084,
+   "obs": 3.261,
+   "sim": 3.419,
+   "boro": 0,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6353,
+   "obs": 3.353,
+   "sim": 3.556,
+   "boro": 1,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6082,
+   "obs": 3.139,
+   "sim": 3.406,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6402,
+   "obs": 3.353,
+   "sim": 3.245,
+   "boro": 4,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6412,
+   "obs": 5.151,
+   "sim": 3.285,
+   "boro": 5,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6385,
+   "obs": 3.261,
+   "sim": 3.405,
+   "boro": 4,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6357,
+   "obs": 3.414,
+   "sim": 3.426,
+   "boro": 1,
+   "quality": "Poor",
+   "env": "Coastal"
+  },
+  {
+   "id": 6370,
+   "obs": 2.957,
+   "sim": 3.549,
+   "boro": 1,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6266,
+   "obs": 3.231,
+   "sim": 3.236,
+   "boro": 4,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6267,
+   "obs": 2.987,
+   "sim": 3.225,
+   "boro": 0,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6278,
+   "obs": 3.292,
+   "sim": 3.083,
+   "boro": 0,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6395,
+   "obs": 3.2,
+   "sim": 3.246,
+   "boro": 4,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6388,
+   "obs": 3.292,
+   "sim": 3.229,
+   "boro": 4,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6092,
+   "obs": 3.139,
+   "sim": 3.399,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  },
+  {
+   "id": 6081,
+   "obs": 3.658,
+   "sim": 3.33,
+   "boro": 0,
+   "quality": "Good",
+   "env": "Coastal"
+  },
+  {
+   "id": 6410,
+   "obs": 2.987,
+   "sim": 3.371,
+   "boro": 5,
+   "quality": "Fair",
+   "env": "Coastal"
+  },
+  {
+   "id": 6303,
+   "obs": 3.078,
+   "sim": 3.211,
+   "boro": 0,
+   "quality": "Excellent",
+   "env": "Coastal"
+  }
+ ],
+ "hwmStats": {
+  "n": 142,
+  "bias": -0.031,
+  "mae": 0.244,
+  "rmse": 0.386
+ },
+ "hwmDry": 16,
+ "extent": {
+  "hit": 171954,
+  "miss": 89405,
+  "falseAlarm": 59213,
+  "csi": 0.536,
+  "hitRate": 0.658,
+  "falseAlarmRatio": 0.256,
+  "observedKm2": 104.54,
+  "simulatedKm2": 92.47
+ },
+ "impact": {
+  "buildingsReached": 47189,
+  "aboveFirstFloor": 27878,
+  "loss": 17589418734,
+  "residentsAboveFF": 294050,
+  "lossByBorough": [
+   0,
+   2121949671,
+   1096815115,
+   7427411535,
+   5665926622,
+   1277315791
+  ]
+ },
+ "series": [
+  [
+   1,
+   1.262,
+   0,
+   634
+  ],
+  [
+   1800,
+   1.484,
+   7719600,
+   2207494
+  ],
+  [
+   3600,
+   1.701,
+   12467600,
+   4387234
+  ],
+  [
+   5400,
+   1.895,
+   18178800,
+   7856242
+  ],
+  [
+   7200,
+   2.12,
+   25093600,
+   13509215
+  ],
+  [
+   9000,
+   2.357,
+   32204000,
+   19977744
+  ],
+  [
+   10800,
+   2.623,
+   39356800,
+   26935467
+  ],
+  [
+   12600,
+   2.959,
+   48740000,
+   37212168
+  ],
+  [
+   14400,
+   3.21,
+   59308800,
+   49089421
+  ],
+  [
+   16200,
+   3.307,
+   71863600,
+   61412503
+  ],
+  [
+   18000,
+   3.417,
+   81622800,
+   73247066
+  ],
+  [
+   19800,
+   3.408,
+   87845600,
+   79750619
+  ],
+  [
+   21600,
+   3.259,
+   87606400,
+   74636884
+  ],
+  [
+   23401,
+   3.009,
+   78532400,
+   60067563
+  ],
+  [
+   25200,
+   2.645,
+   63528800,
+   43652854
+  ],
+  [
+   27000,
+   2.18,
+   47966400,
+   28280601
+  ],
+  [
+   28800,
+   1.725,
+   35776400,
+   17454407
+  ],
+  [
+   30600,
+   1.369,
+   25300000,
+   10977102
+  ],
+  [
+   32400,
+   1.124,
+   17301600,
+   7556463
+  ],
+  [
+   34200,
+   0.928,
+   12552800,
+   5936981
+  ],
+  [
+   36000,
+   0.701,
+   10558400,
+   5032153
+  ],
+  [
+   37801,
+   0.499,
+   9470800,
+   4400797
+  ],
+  [
+   39600,
+   0.334,
+   8531600,
+   3889317
+  ],
+  [
+   41400,
+   0.254,
+   7479200,
+   3483569
+  ],
+  [
+   43200,
+   0.31,
+   6920000,
+   3138400
+  ]
+ ]
+}

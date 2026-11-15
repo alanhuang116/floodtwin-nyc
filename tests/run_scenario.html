@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Scenario Run</title>
+<script type="importmap">{"imports": {"three": "../web/vendor/three/three.module.min.js"}}</script>
+</head>
+<body>
+<pre id="out">running</pre>
+<script type="module">
+// Runs a scenario headlessly with the production modules and reports peak water
+// surface at the USGS high-water marks, agreement with the mapped Sandy
+// inundation zone, flood extent over time and building losses.
+// Query: ?preset=sandy&dx=40&porosity=1
+import * as THREE from 'three';
+import { loadAll } from '../web/js/data.js';
+import { buildGrid, buildingCells, pointCells, KIND } from '../web/js/grid.js';
+import { FloodSolver } from '../web/js/solver.js';
+import { presetById, makeScenario } from '../web/js/scenarios.js';
+import { makeVuln, entryWeight } from '../web/js/vuln.js';
+
+const out = document.getElementById('out');
+const q = new URLSearchParams(location.search);
+try {
+  const data = await loadAll('../web/data');
+  const preset = presetById(q.get('preset') || 'sandy');
+  const p = { ...preset.p };
+  if (q.has('slr')) p.slr = +q.get('slr');
+  const dx = +(q.get('dx') || 40);
+  const g = buildGrid(data, { dx, drainage: p.drainage, infiltration: p.infiltration, porosity: q.get('porosity') !== '0',
+    nPaved: q.has('n') ? +q.get('n') : undefined });
+  const renderer = new THREE.WebGLRenderer({ canvas: document.createElement('canvas'), antialias: false });
+  const solver = new FloodSolver(renderer, g);
+  solver.minCoastZ = g.minCoastZ;
+  const hwm = data.events.hwm;
+  solver.setPointCells(pointCells(hwm, g));
+  solver.setBuildingCells(buildingCells(data.exposure, g));
+  const sc = makeScenario(p, data.events);
+  const vuln = makeVuln(data.events);
+  let t = 0, steps = 0, lastStats = 0, nextLog = 0;
+  const series = [];
+  solver.setGauges(sc.gauges(0)); solver.step(1e-4); solver.time = 0; solver.reduceSync();
+  while (t < sc.duration) {
+    solver.setGauges(sc.gauges(t));
+    solver.rain = sc.rain(t) / 3.6e6;
+    if (steps % 20 === 0) solver.reduceSync();
+    const dt = Math.min(solver.stableDt(), sc.duration - t + 1e-6);
+    solver.step(dt); t += dt; steps++;
+    if (t - lastStats >= 10) { solver.updateStats(); lastStats = t; }
+    if (t >= nextLog) { solver.reduceSync(); series.push([Math.round(t), +sc.stage(t).toFixed(3), Math.round(solver.wetCity), Math.round(solver.volCity)]); nextLog += 1800; }
+  }
+  solver.updateStats();
+  const { b, p: pts } = solver.sampleSync();
+  const hw = hwm.map((h, k) => ({ id: h.id, obs: h.elev_m, sim: pts[4 * k] > -90 ? +pts[4 * k].toFixed(3) : null, boro: h.boro, quality: h.quality, env: h.env }));
+  // extent agreement on land inside the city
+  const st = solver.readStats();
+  let hit = 0, miss = 0, fa = 0, maxArea = 0;
+  for (let c = 0; c < g.N; c++) {
+    if (g.kind[c] !== KIND.CITY) continue;
+    const wet = st[4 * c] > 0.10, obs = g.sandy[c] === 1;
+    if (wet) maxArea += dx * dx;
+    if (wet && obs) hit++; else if (!wet && obs) miss++; else if (wet && !obs) fa++;
+  }
+  // losses
+  const E = data.exposure, A = data.city.archetypes;
+  let reached = 0, aboveFF = 0, loss = 0, people = 0;
+  const byBoro = [0, 0, 0, 0, 0, 0];
+  for (let k = 0; k < E.n; k++) {
+    const hm = b[4 * k];
+    if (!(hm > 0.15) || E.arch[k] === 255) continue;
+    reached++;
+    const cell = Math.floor(E.y[k] / dx) * g.nx + Math.floor(E.x[k] / dx), z = g.z[cell];
+    const d = vuln.damage(A[E.arch[k]], 'NY', z + hm, z, E.ffh[k]);
+    const share = Math.min(1, 2 / Math.max(1, E.storeys[k])) * entryWeight(A[E.arch[k]], hm, E.ffh[k]);
+    const l = d.mean * (E.vs[k] + E.vc[k]) * share;
+    loss += l; byBoro[E.boro[k]] += l;
+    if (d.d > 0) { aboveFF++; people += E.pop[k]; }
+  }
+  const errs = hw.filter(h => h.sim != null).map(h => h.sim - h.obs);
+  const stat = a => ({ n: a.length, bias: +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(3),
+    mae: +(a.reduce((x, y) => x + Math.abs(y), 0) / a.length).toFixed(3), rmse: +Math.sqrt(a.reduce((x, y) => x + y * y, 0) / a.length).toFixed(3) });
+  out.textContent = JSON.stringify({ ok: true, preset: preset.id, dx, nx: g.nx, ny: g.ny, cells: g.N, steps, simSeconds: Math.round(t),
+    minCoastZ: g.minCoastZ, hwm: hw, hwmStats: stat(errs), hwmDry: hw.filter(h => h.sim == null).length,
+    extent: { hit, miss, falseAlarm: fa, csi: +(hit / (hit + miss + fa)).toFixed(3), hitRate: +(hit / (hit + miss)).toFixed(3),
+      falseAlarmRatio: +(fa / (hit + fa)).toFixed(3), observedKm2: +((hit + miss) * dx * dx / 1e6).toFixed(2), simulatedKm2: +(maxArea / 1e6).toFixed(2) },
+    impact: { buildingsReached: reached, aboveFirstFloor: aboveFF, loss: Math.round(loss), residentsAboveFF: people,
+      lossByBorough: byBoro.map(Math.round) }, series });
+} catch (e) {
+  out.textContent = JSON.stringify({ ok: false, error: String(e && e.stack || e) });
+}
+</script>
+</body>
+</html>

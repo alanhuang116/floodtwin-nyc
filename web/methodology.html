@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FloodTwin NYC Methodology</title>
+<meta name="description" content="How FloodTwin NYC works: data, terrain and buildings for all five boroughs, the GPU shallow-water solver with building porosity, four-gauge boundary conditions, damage and loss estimation, validation against Hurricane Sandy, and limitations.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0d0f; --panel: #0f1418; --line: rgba(232, 240, 244, 0.09); --line-2: rgba(232, 240, 244, 0.16);
+  --text: #e8eef1; --text-2: #b4bfc5; --text-3: #75828a; --accent: #ffb547;
+  --font: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif; --mono: 'Geist Mono', ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15.5px/1.7 var(--font); -webkit-font-smoothing: antialiased; }
+a { color: var(--text); text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--text-2); }
+header.top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 24px; height: 56px; background: rgba(10, 13, 15, 0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; text-decoration: none; }
+.brand small { font-weight: 400; color: var(--text-3); font-size: 13px; }
+.btn { display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: 8px; background: var(--text); color: #0b0e10; font-weight: 500; font-size: 13.5px; text-decoration: none; }
+.layout { display: grid; grid-template-columns: 250px minmax(0, 780px); gap: 56px; justify-content: center; padding: 40px 24px 120px; }
+nav.toc { position: sticky; top: 88px; align-self: start; font-size: 13.5px; max-height: calc(100vh - 110px); overflow: auto; }
+nav.toc .toc-title { color: var(--text-3); margin-bottom: 8px; }
+nav.toc a { display: block; padding: 4px 0 4px 12px; border-left: 1px solid var(--line); color: var(--text-2); text-decoration: none; }
+nav.toc a:hover, nav.toc a.on { color: var(--text); border-left-color: var(--accent); }
+main h1 { font-size: 36px; line-height: 1.2; letter-spacing: -0.025em; margin: 0 0 14px; font-weight: 600; }
+.lede { font-size: 18px; color: var(--text-2); margin: 0 0 26px; line-height: 1.6; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--text-3); font-size: 13px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 40px; }
+h2 { font-size: 24px; letter-spacing: -0.015em; margin: 64px 0 14px; font-weight: 600; scroll-margin-top: 80px; }
+h3 { font-size: 17px; margin: 34px 0 8px; font-weight: 600; scroll-margin-top: 80px; }
+p { margin: 0 0 16px; color: var(--text-2); }
+p strong, li strong { color: var(--text); font-weight: 500; }
+ul, ol { color: var(--text-2); padding-left: 22px; margin: 0 0 16px; }
+li { margin: 4px 0; }
+code { font-family: var(--mono); font-size: 13px; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px; color: var(--text); }
+.keyfacts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 10px 0 28px; }
+.keyfacts div { background: var(--panel); padding: 16px; }
+.keyfacts b { display: block; font-size: 22px; font-weight: 500; letter-spacing: -0.015em; }
+.keyfacts span { color: var(--text-3); font-size: 13px; line-height: 1.45; display: block; margin-top: 2px; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 8px 0 22px; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-weight: 500; color: var(--text-3); padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line-2); vertical-align: bottom; }
+td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); color: var(--text-2); vertical-align: top; }
+td.num, th.num { text-align: right; }
+.table-wrap { overflow-x: auto; }
+.eq { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 10px 0 20px; overflow-x: auto; }
+.eq math { font-size: 17px; color: var(--text); }
+.eq .where { color: var(--text-3); font-size: 13px; margin-top: 10px; font-family: var(--font); }
+.note { border-left: 2px solid var(--accent); padding: 4px 0 4px 16px; margin: 18px 0 22px; color: var(--text-2); }
+.figure { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin: 12px 0 22px; }
+.figure svg { display: block; width: 100%; height: auto; }
+.figure .cap { color: var(--text-3); font-size: 13px; margin-top: 10px; }
+.refs li { font-size: 14px; margin: 8px 0; }
+footer { color: var(--text-3); font-size: 13px; border-top: 1px solid var(--line); padding-top: 22px; margin-top: 64px; }
+@media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); gap: 0; } nav.toc { display: none; } .keyfacts { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { main h1 { font-size: 28px; } .keyfacts { grid-template-columns: 1fr; } header.top { padding: 0 14px; } .brand small { display: none; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html">
+    <svg viewBox="0 0 22 22" width="22" height="22" aria-hidden="true"><rect x="1.75" y="1.75" width="18.5" height="18.5" rx="5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 12.6c2.2-1.5 4.2-1.5 6.5 0s4.3 1.5 6.5 0V17.5a1.5 1.5 0 0 1-1.5 1.5H6a1.5 1.5 0 0 1-1.5-1.5Z" fill="#ffb547"/></svg>
+    FloodTwin NYC <small>Methodology</small>
+  </a>
+  <a class="btn" href="index.html">Open the Model</a>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <div class="toc-title">Contents</div>
+  <a href="#overview">Overview</a>
+  <a href="#domain">Domain and Grids</a>
+  <a href="#data">Data Sources</a>
+  <a href="#terrain">Terrain and Water</a>
+  <a href="#buildings">Buildings, Exposure and Trees</a>
+  <a href="#hydraulics">Hydraulic Model</a>
+  <a href="#porosity">Buildings in the Flow</a>
+  <a href="#boundary">Boundary Conditions</a>
+  <a href="#scenarios">Scenarios</a>
+  <a href="#losses">Damage and Losses</a>
+  <a href="#assets">Transit and Hospitals</a>
+  <a href="#validation">Validation: Hurricane Sandy</a>
+  <a href="#rendering">Rendering in the Browser</a>
+  <a href="#limitations">Limitations</a>
+  <a href="#references">References and Licences</a>
+</nav>
+<main>
+<h1>FloodTwin NYC Methodology</h1>
+<p class="lede">FloodTwin NYC is a shallow-water flood model of all five boroughs that runs on the graphics card in a web browser. It is driven by water levels at four tide gauges and by rainfall, and it prices damage to every building in the city with FloodVuln Global damage curves.</p>
+<div class="meta"><span>Version 1.0</span><span>November 2026</span><span>Entanglix</span><span>NAD83 / UTM 18N, heights in m NAVD88</span></div>
+
+<div class="keyfacts">
+  <div><b>1.56 million</b><span>Cells at the standard 40 m grid (6.2 million at 20 m)</span></div>
+  <div><b>1,082,803</b><span>NYC building footprints with measured roof heights</span></div>
+  <div><b>730,346</b><span>Buildings with National Structure Inventory values</span></div>
+  <div><b>0.21 m</b><span>Mean absolute error at Sandy high-water marks in NYC (40 m)</span></div>
+</div>
+
+<h2 id="overview">Overview</h2>
+<p>The model solves the local inertial form of the shallow-water equations on a regular grid that covers New York City and the waters around it, about 49 by 51 km. Buildings enter the flow as a sub-grid porosity, so city blocks slow and store water the way they do on the ground. Coastal water levels come from four tide gauges and reach every boundary cell as a weighted mix; rainfall falls on every cell and drains into sewers and soil at set rates.</p>
+<p>About once a second while the model runs, the browser reads back the peak depth at each of the city's buildings, converts it with FloodVuln Global into a damage ratio, and sums losses by borough and neighborhood. The same readback scores 158 USGS high-water marks from Hurricane Sandy, 496 subway stations and 117 hospitals.</p>
+
+<h2 id="domain">Domain and Grids</h2>
+<p>The domain runs from 561,840 to 610,800 m east and 4,480,560 to 4,531,440 m north in NAD83 / UTM zone 18N (48.96 by 50.88 km). It contains the five boroughs, the Hudson and East Rivers, Upper and Lower New York Bay, Jamaica Bay, western Long Island Sound and the New Jersey shore from Perth Amboy to Fort Lee.</p>
+<div class="table-wrap"><table>
+<tr><th>Grid</th><th class="num">Cells</th><th>Use</th></tr>
+<tr><td>80 m, Fast</td><td class="num">389,232</td><td>Laptops and integrated graphics</td></tr>
+<tr><td>40 m, Standard</td><td class="num">1,556,928</td><td>The default on capable graphics cards</td></tr>
+<tr><td>20 m, Fine</td><td class="num">6,227,712</td><td>Resolves single streets and narrow waterways; needs a dedicated GPU</td></tr>
+</table></div>
+<p>All layers are prepared at 20 m and aggregated in the browser when the grid is built, so a change of resolution takes a few seconds and no download.</p>
+
+<h2 id="data">Data Sources</h2>
+<div class="table-wrap"><table>
+<tr><th>Layer</th><th>Source</th></tr>
+<tr><td>Terrain</td><td>USGS 3DEP 1/3 arc-second DEM (hydro-flattened), resampled to 10 m and aggregated to 20 m</td></tr>
+<tr><td>Aerial imagery</td><td>USGS National Map imagery basemap: 1.8 m tiles near the camera, 12 m city-wide</td></tr>
+<tr><td>Buildings</td><td>NYC Building Footprints (NYC Open Data) with roof heights from the city's lidar survey; OpenStreetMap buildings outside the city</td></tr>
+<tr><td>Exposure</td><td>USACE National Structure Inventory: structure and contents value, occupancy, foundation, first-floor height, storeys, night-time residents</td></tr>
+<tr><td>Water levels</td><td>NOAA CO-OPS 8518750 The Battery and 8516945 Kings Point; USGS 01311875 Rockaway Inlet and 01311850 Jamaica Bay at Inwood</td></tr>
+<tr><td>Validation</td><td>USGS Short-Term Network Hurricane Sandy high-water marks; the NYC Sandy Inundation Zone</td></tr>
+<tr><td>Rainfall</td><td>NOAA Atlas 14 at Central Park; NYC Stormwater Flood Maps scenarios; Hurricane Ida hourly rainfall at Central Park</td></tr>
+<tr><td>Context</td><td>FEMA National Flood Hazard Layer; MTA subway stations; NYC hospitals; NYC 2015 Street Tree Census; borough boundaries and 2020 Neighborhood Tabulation Areas</td></tr>
+<tr><td>Damage</td><td>FloodVuln Global, New York calibration (Entanglix)</td></tr>
+</table></div>
+
+<h2 id="terrain">Terrain and Water</h2>
+<p>The 3DEP DEM is read from the USGS static tiles and resampled to 10 m on the model grid. Water is any hydro-flattened surface below 0.6 m (rivers, bays, tidal creeks and marsh channels), any cell without elevation outside the city, and the water polygons of the NYC borough boundaries outside city land. Isolated water bodies smaller than 0.3 km² are treated as land. A model cell is boundary water when more than half of its 20 m sub-cells are water; land cells take the mean elevation of their land sub-cells only, so a bulkhead cell is not lowered by the river beside it.</p>
+<p>City ground below 0.8 m NAVD88, about mean higher high water, is covered by ordinary high tides. It floods like any other land in the model but is left out of flooded-area statistics, which would otherwise count salt marsh as flooding.</p>
+
+<h2 id="buildings">Buildings, Exposure and Trees</h2>
+<p>The 1.08 million NYC footprints are simplified at 0.5 m and keep their measured roof heights; footprints without a height get 6 m (3 m for garages and sheds). Ground level at each building is the lowest DEM value at its corners, so walls meet sloping ground. Each footprint receives the National Structure Inventory points inside it, or the nearest within 12 m, and takes its occupancy, foundation and first-floor height from the most valuable of them. Values and residents are summed.</p>
+<p>The browser streams buildings in 1.6 km tiles around the camera, and every building 40 m and taller is drawn from a separate skyline layer that is always loaded. The 652,173 living street trees of the 2015 census are drawn near the camera, sized by trunk diameter and coloured by species for late October.</p>
+
+<h2 id="hydraulics">Hydraulic Model</h2>
+<p>The solver is the local inertial scheme of Bates et al. (2010) with the stabilised flux of de Almeida et al. (2012). Discharge per unit width across each face is updated from the water-surface slope with Manning friction:</p>
+<div class="eq"><math display="block"><msup><mi>q</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msup><mo>=</mo><mfrac><mrow><mi>θ</mi><msup><mi>q</mi><mi>n</mi></msup><mo>+</mo><mfrac><mrow><mn>1</mn><mo>−</mo><mi>θ</mi></mrow><mn>2</mn></mfrac><mo>(</mo><msubsup><mi>q</mi><mrow><mi>i</mi><mo>−</mo><mn>1</mn></mrow><mi>n</mi></msubsup><mo>+</mo><msubsup><mi>q</mi><mrow><mi>i</mi><mo>+</mo><mn>1</mn></mrow><mi>n</mi></msubsup><mo>)</mo><mo>−</mo><mi>g</mi><msub><mi>h</mi><mi>f</mi></msub><mi>Δt</mi><mfrac><mi>Δη</mi><mi>Δx</mi></mfrac></mrow><mrow><mn>1</mn><mo>+</mo><mi>g</mi><mi>Δt</mi><msup><mi>n</mi><mn>2</mn></msup><mo>|</mo><mi>q</mi><mo>|</mo><mo>/</mo><msubsup><mi>h</mi><mi>f</mi><mrow><mn>7</mn><mo>/</mo><mn>3</mn></mrow></msubsup></mrow></mfrac></math>
+<div class="where">θ = 0.8; h<sub>f</sub> is the flow depth at the face (the higher water surface minus the higher bed); Manning n is 0.030 on paved ground and 0.045 on vegetated ground, blended by the green share of each cell, and 0.025 in open water.</div></div>
+<p>The discharge is limited to a Froude number of 1, and no face may take more than a quarter of the water stored in its donor cell in one step, which keeps depths positive. Continuity then updates the depth from the face fluxes, rainfall and losses. The time step follows the gravity-wave speed (Courant number 0.7), including the depth a coastal cell would have at the boundary level; flow speed adds to it only where the water is deeper than 5 cm, so thin films at a wet front do not force tiny steps.</p>
+<p>Each step runs as fragment shaders on 32-bit float textures (WebGL 2). Running statistics (peak depth, arrival of 10 cm, peak speed, peak hazard rating) stay on the GPU, and a reduction pyramid returns flooded area and volume without copying the grid back.</p>
+
+<h2 id="porosity">Buildings in the Flow</h2>
+<p>Buildings are drawn onto a 5 m canvas and averaged to give the built-over fraction of each 20 m cell. The open fraction φ = max(0.1, 1 − cover) multiplies storage, so a dense block fills faster for the same inflow; the conveyance of a face is the smaller open fraction of the two cells on either side; and rain on roofs drains into the open part of the cell. Sewer capacity (44 mm/h by default, about the 1.75 inches an hour NYC sewers are designed for) acts over the whole cell and is concentrated into its open part; infiltration acts on vegetated ground. Porosity can be switched off in the Model settings.</p>
+
+<h2 id="boundary">Boundary Conditions</h2>
+<p>Water cells are boundary cells: their surface is set every step to a weighted mix of the four gauges. The weights are inverse distances measured through water, not in a straight line, from each boundary cell to each gauge on an 80 m grid, so Jamaica Bay follows the Inwood gauge, the Sound follows Kings Point and the harbour follows The Battery.</p>
+<div class="table-wrap"><table>
+<tr><th>Gauge</th><th class="num">Sandy peak, m NAVD88</th><th>Time</th></tr>
+<tr><td>The Battery (NOAA 8518750)</td><td class="num">3.44</td><td>30 October 2012, 01:24 UTC (21:24 EDT on the 29th)</td></tr>
+<tr><td>Kings Point (NOAA 8516945)</td><td class="num">3.08</td><td>02:06 UTC</td></tr>
+<tr><td>Rockaway Inlet (USGS 01311875)</td><td class="num">3.25</td><td>01:06 UTC</td></tr>
+<tr><td>Jamaica Bay at Inwood (USGS 01311850)</td><td class="num">3.22</td><td>01:36 UTC</td></tr>
+</table></div>
+<p>For design events the astronomical tide at each gauge comes from harmonic constituents (M2, S2, N2, K2, K1, O1, M4) fitted to the October 2012 record before the storm (root-mean-square residual 0.13 to 0.17 m). A design surge is a Gaussian pulse added at all four gauges and scaled so that The Battery reaches the requested peak.</p>
+
+<h2 id="scenarios">Scenarios</h2>
+<ul>
+<li><strong>Hurricane Sandy, 2012:</strong> the observed record at all four gauges for 12 hours from 16:00 EDT on 29 October.</li>
+<li><strong>Sandy with sea level rise:</strong> the same record raised by 0.5 m (upper end of the NPCC 2019 middle range for the 2050s) or 1.0 m (inside its 2100s range).</li>
+<li><strong>Long nor'easter surge:</strong> a 36-hour surge peaking at 2.4 m at The Battery on high tide.</li>
+<li><strong>NYC DEP stormwater scenarios:</strong> 54 mm (2.13 inches) and 93 mm (3.66 inches) in one hour on today's tides; at Central Park these are about a 1-in-20-year hour and a 1-in-500-year hour in NOAA Atlas 14.</li>
+<li><strong>Hurricane Ida, 2021:</strong> Central Park's hourly rainfall on 1 September 2021 (180 mm in five hours) applied across the city.</li>
+<li><strong>Compound surge and rain:</strong> a 2.6 m surge with 40 mm/h of rain for three hours across its peak.</li>
+</ul>
+<p>Every parameter can be changed: surge peak, duration and tide timing, sea level rise, rainfall intensity and duration, sewer capacity, street roughness, grid size and porosity. Waterfront walls can be raised along any borough to a chosen crest, and barriers can be drawn on the map.</p>
+
+<h2 id="losses">Damage and Losses</h2>
+<p>A building counts as flooded once the peak depth at it reaches 15 cm. In a densely built cell the depth is capped by the highest water surface in the open cells around it, because rain from roofs pools in the small open part of such a cell, a storage effect of the coarse grid rather than water against the walls. Its damage ratio comes from FloodVuln Global, fitted to 1.86 million National Flood Insurance Program claims, using the New York calibration and the archetype given by its occupancy, foundation and storeys. The curve is read at the water depth above the first floor (peak depth minus first-floor height) and gives the mean and the 10th, 50th and 90th percentiles.</p>
+<p>FloodVuln ratios are conditional on water getting inside. Below the first floor that is uncertain, so the ratio is weighted by the chance of entry: zero at 15 cm, rising linearly to one when the water reaches the first floor, or at 45 cm for buildings with a basement, which take water through windows and stairwells. This matters little for Sandy, where most damaged buildings stood in deep water, and a great deal for cloudbursts, where most water stays at the curb.</p>
+<p>Loss is the weighted damage ratio times structure and contents value. For buildings taller than two storeys only the lowest two are exposed, so the value is scaled by 2 / storeys. The range shown under the total adds every building's 10th and 90th percentile losses: it is the spread if all buildings sat at the same percentile, which is wider than the uncertainty of a city-wide total.</p>
+
+<h2 id="assets">Transit and Hospitals</h2>
+<p>Subway stations and hospitals are scored by the peak depth in their model cell. A station below street level or at grade with more than 15 cm of water is counted as reached; elevated and viaduct stations are shown but not counted. Water enters the subway through entrances, vents and grates that the model does not represent one by one, so this indicates exposure, not tunnel flooding.</p>
+
+<h2 id="validation">Validation: Hurricane Sandy</h2>
+<p>The Sandy replay was run in full at each grid size with the production code in a headless browser (tests/run_scenario.py). The simulated peak water surface at a high-water mark is the highest over the 3 by 3 cells around it. Extent is compared with the NYC Sandy Inundation Zone on city land deeper than 10 cm, excluding ground below 0.8 m.</p>
+<div class="table-wrap"><table>
+<tr><th>Grid</th><th class="num">Cells</th><th class="num">Marks reached</th><th class="num">Bias, m</th><th class="num">MAE, m</th><th class="num">RMSE, m</th><th class="num">MAE in NYC, m</th><th class="num">CSI</th><th class="num">Hit rate</th><th class="num">False alarms</th><th class="num">Loss</th></tr>
+<tr><td>80 m</td><td class="num">389,232</td><td class="num">150 of 158</td><td class="num">-0.07</td><td class="num">0.25</td><td class="num">0.42</td><td class="num">0.21</td><td class="num">0.55</td><td class="num">0.69</td><td class="num">0.27</td><td class="num">$17.7B</td></tr><tr><td>40 m</td><td class="num">1,556,928</td><td class="num">149 of 158</td><td class="num">-0.06</td><td class="num">0.26</td><td class="num">0.42</td><td class="num">0.21</td><td class="num">0.53</td><td class="num">0.69</td><td class="num">0.30</td><td class="num">$17.7B</td></tr><tr><td>20 m</td><td class="num">6,227,712</td><td class="num">142 of 158</td><td class="num">-0.03</td><td class="num">0.24</td><td class="num">0.39</td><td class="num">0.21</td><td class="num">0.54</td><td class="num">0.66</td><td class="num">0.26</td><td class="num">$17.6B</td></tr>
+</table></div>
+<p>At 40 m the model reaches 149 of the 158 marks in the domain with a mean error of -0.06 m; for the 105 reached marks in the five boroughs the mean absolute error is 0.21 m. The flooded area agrees with the mapped zone with a critical success index of 0.53. Estimated building losses are $17.7 billion: Brooklyn $7.5B, Queens $5.7B, Manhattan $2.2B, Staten Island $1.3B and the Bronx $1.0B. Business interruption, infrastructure and vehicles are not included.</p>
+<div class="note">The mapped inundation zone is itself an interpolation of high-water marks and model results; agreement with it measures consistency, not truth.</div>
+
+<h2 id="rendering">Rendering in the Browser</h2>
+<p>The terrain is drawn in 1.6 km tiles at three levels of detail (20, 80 and 320 m) with city-wide imagery and sharper imagery tiles near the camera. Buildings are triangulated in web workers from compact binary tiles (26.7 MB for the whole city) and share two data textures that hold each building's class, height, ground and roof colour, and its damage. Facades, windows and night lighting are procedural; flood marks on walls come straight from the solver's peak-depth field. The water surface reads the simulated depth and velocity for its waves, foam, flow tracers and colour, with planar reflection and refraction.</p>
+<p>The page picks its starting quality from the graphics card, then adjusts the render resolution to hold the frame rate; the 80 m grid is the default on integrated graphics.</p>
+
+<h2 id="limitations">Limitations</h2>
+<ul>
+<li>The grid is 20 to 80 m: walls, gaps between buildings and sea walls smaller than a cell enter only through porosity and cell-mean elevations.</li>
+<li>The sewer network is a uniform capacity; outfalls, tide gates, pumping stations and backflow are not modelled.</li>
+<li>Waves and wave run-up on the open coast (the Rockaways, Staten Island's east shore) are not modelled; the boundary is the still-water level at the gauges.</li>
+<li>Subway and basement flooding are not modelled.</li>
+<li>Building values are National Structure Inventory estimates; first-floor heights are partly inferred.</li>
+<li>Losses cover buildings and contents only.</li>
+</ul>
+
+<h2 id="references">References and Licences</h2>
+<ol class="refs">
+<li>Bates, P. D., Horritt, M. S. and Fewtrell, T. J. (2010). A simple inertial formulation of the shallow water equations for efficient two-dimensional flood inundation modelling. Journal of Hydrology 387, 33–45.</li>
+<li>de Almeida, G. A. M., Bates, P., Freer, J. E. and Souvignet, M. (2012). Improving the stability of a simple formulation of the shallow water equations for 2-D flood modeling. Water Resources Research 48, W05528.</li>
+<li>New York City Panel on Climate Change (2019). NPCC 2019 Report. Annals of the New York Academy of Sciences 1439.</li>
+<li>Environment Agency and DEFRA (2006). Flood Risks to People, Phase 2 (FD2320).</li>
+<li>U.S. Geological Survey. Hurricane Sandy high-water marks, Short-Term Network.</li>
+</ol>
+<p>Building footprints, the Sandy Inundation Zone, street trees and boundaries: NYC Open Data. Buildings outside the city: © OpenStreetMap contributors, ODbL. Terrain, imagery, gauges and high-water marks: USGS and NOAA (public domain). National Structure Inventory: USACE. Flood zones: FEMA. three.js: MIT licence.</p>
+<footer>FloodTwin NYC by Entanglix. Results are model estimates for research and planning, not flood insurance determinations.</footer>
+</main>
+</div>
+</body>
+</html>
