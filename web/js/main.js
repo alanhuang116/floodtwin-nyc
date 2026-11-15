@@ -75,7 +75,8 @@ function gpuInfo() {
 /** A first guess at what the device can do; the frame-time governor refines it while running. */
 function tierOf(name) {
   const n = (name || '').toLowerCase();
-  const small = Math.max(screen.width, screen.height) < 900 || /android|iphone|ipad|mobile/i.test(navigator.userAgent);
+  // phones and tablets: a mobile user agent, or a touch screen with no mouse or trackpad
+  const small = /android|iphone|ipad|mobile/i.test(navigator.userAgent) || (matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches);
   if (/swiftshader|llvmpipe|software|basic render/.test(n) || small) return 'performance';
   if (/nvidia|geforce|rtx|gtx|quadro|radeon rx|radeon pro|rx \d{3,4}|arc\(tm\) a|arc a\d|apple m\d (pro|max|ultra)/.test(n)) return 'high';
   if (/apple m\d|apple gpu/.test(n)) return 'balanced';
