@@ -56,6 +56,8 @@ uniform int uMode;
 uniform float uNight, uSelected, uFlood;
 uniform vec3 uApron;
 float h21(vec2 p) { p = fract(p * vec2(234.34, 435.345)); p += dot(p, p + 34.23); return fract(p.x * p.y); }
+float vnoise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
 float bayer4(vec2 p) {
   ivec2 q = ivec2(mod(p, 4.0));
   int i = q.x + q.y * 4;
@@ -104,7 +106,7 @@ function buildingMaterial(u) {
   if (roofFace) {
     vec3 rc = toLin(vRoof);
     float l = dot(rc, vec3(0.3, 0.59, 0.11));
-    albedo = mix(rc, vec3(l), 0.35) * (0.9 + 0.2 * h21(floor(vWPos.xz * 0.7)));
+    albedo = mix(rc, vec3(l), 0.35) * (0.9 + 0.12 * vnoise(vWPos.xz * 0.35) + 0.06 * vnoise(vWPos.xz * 1.7));
     if (tall) albedo = mix(albedo, vec3(0.16, 0.165, 0.17), 0.3);
   } else {
     // ---- palette by building class (sRGB, converted)
@@ -229,6 +231,25 @@ const PICK_FRAG = /* glsl */`
 flat varying float vT;
 void main() { gl_FragColor = vec4(mod(vT, 256.0), mod(floor(vT / 256.0), 256.0), floor(vT / 65536.0), 255.0) / 255.0; }`;
 
+function tankGeometry() {
+  // a wooden tank on a steel stand with a conical cap, 1 m units scaled per roof
+  const parts = [];
+  const add = (g, col) => { g.computeVertexNormals(); parts.push([g.index ? g.toNonIndexed() : g, col]); };
+  const barrel = new THREE.CylinderGeometry(2.1, 2.2, 3.8, 12, 1, false); barrel.translate(0, 3.3 + 1.9, 0); add(barrel, [0.26, 0.215, 0.18]);
+  const cap = new THREE.ConeGeometry(2.3, 1.3, 12); cap.translate(0, 3.3 + 3.8 + 0.65, 0); add(cap, [0.16, 0.155, 0.15]);
+  for (const [x, z] of [[1.4, 1.4], [-1.4, 1.4], [1.4, -1.4], [-1.4, -1.4]]) { const leg = new THREE.BoxGeometry(0.22, 3.3, 0.22); leg.translate(x, 1.65, z); add(leg, [0.18, 0.18, 0.19]); }
+  const pos = [], nor = [], col = [];
+  for (const [g, c] of parts) {
+    const P = g.attributes.position, N = g.attributes.normal;
+    for (let i = 0; i < P.count; i++) { pos.push(P.getX(i), P.getY(i), P.getZ(i)); nor.push(N.getX(i), N.getY(i), N.getZ(i)); col.push(...c); }
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  out.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  return out;
+}
+
 function treeGeometry(detail) {
   // a unit tree, 1 m tall: trunk to 0.42, a lumpy crown centred at 0.64
   const crown = new THREE.IcosahedronGeometry(0.34, detail);
@@ -313,6 +334,8 @@ export class City {
     // ---- trees
     this.treeMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0, envMapIntensity: 0.6 });
     this.treeGeos = [treeGeometry(0), treeGeometry(1)];
+    this.tankGeo = tankGeometry();
+    this.tankMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0.05 });
     this.treeColours = c.tree_species.map(name => {
       const s = SPECIES[name] || SPECIES.Other;
       return { green: srgb(s[0]), autumn: srgb(s[1]), turned: s[2] };
@@ -419,6 +442,7 @@ export class City {
     const pick = new THREE.Mesh(g, this.pickMat);
     this.pickScene.add(pick);
     this.stats.triangles += out.index.length / 3;
+    if (out.tanks?.length) { this.tallTanks = this._tankMesh(out.tanks, 0, 0); this.group.add(this.tallTanks); }
   }
 
   _addChunk(ch, out) {
@@ -444,6 +468,7 @@ export class City {
       this.stats.triangles += ch.tris;
     }
     ch.treeData = out.trees;
+    ch.tankData = out.tanks;
     ch.ox = out.ox; ch.oy = out.oy;
     this.stats.chunks++;
     this.onChunk?.(ch);
@@ -456,7 +481,8 @@ export class City {
       this.stats.triangles -= ch.tris || 0;
     }
     this._dropTrees(ch);
-    ch.mesh = null; ch.pick = null; ch.treeData = null; ch.ids = null;
+    this._dropTanks(ch);
+    ch.mesh = null; ch.pick = null; ch.treeData = null; ch.tankData = null; ch.ids = null;
     ch.state = 0;
     this.stats.chunks--;
   }
@@ -497,6 +523,36 @@ export class City {
     this.group.add(mesh);
     ch.treeMesh = mesh;
     this.stats.trees += n;
+  }
+
+  /** Instanced water tanks; T = [x, z, roof, scale] per tank, relative to (ox, oz) in scene axes. */
+  _tankMesh(T, ox, oz) {
+    const n = T.length / 4;
+    const mesh = new THREE.InstancedMesh(this.tankGeo, this.tankMat, n);
+    const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+    for (let k = 0; k < n; k++) {
+      p.set(ox + T[4 * k], T[4 * k + 2] - 0.1, oz + T[4 * k + 1]);
+      q.setFromAxisAngle(up, k * 2.39996);
+      s.setScalar(T[4 * k + 3]);
+      mtx.compose(p, q, s);
+      mesh.setMatrixAt(k, mtx);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    mesh.name = 'tanks';
+    return mesh;
+  }
+
+  _makeTanks(ch) {
+    if (!ch.tankData || !ch.tankData.length || ch.tankMesh) return;
+    ch.tankMesh = this._tankMesh(ch.tankData, ch.ox - this.W / 2, this.H / 2 - ch.oy);
+    this.group.add(ch.tankMesh);
+  }
+
+  _dropTanks(ch) {
+    if (!ch.tankMesh) return;
+    this.group.remove(ch.tankMesh); ch.tankMesh.dispose(); ch.tankMesh = null;
   }
 
   _dropTrees(ch) {
@@ -542,6 +598,8 @@ export class City {
         if (!ch.treeMesh && ch.treeData && ch.d < RT && ch.vis && this.showTrees !== false) this._makeTrees(ch);
         else if (ch.treeMesh && ch.d > RT * 1.3) this._dropTrees(ch);
         if (ch.treeMesh) ch.treeMesh.visible = ch.d < RT && this.showTrees !== false;
+        if (!ch.tankMesh && ch.tankData && ch.d < RT && ch.vis) this._makeTanks(ch);
+        else if (ch.tankMesh && ch.d > RT * 1.3) this._dropTanks(ch);
       }
     }
     // nearest first, chunks in view before those behind the camera

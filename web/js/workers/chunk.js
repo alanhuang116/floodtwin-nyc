@@ -132,6 +132,7 @@ export function build(c, texBase, centre) {
   const n1 = [0, 0], n2 = [0, 0];
 
   const info = new Float32Array(c.nB * 4);
+  const tanks = [];                                // rooftop water tanks: x, z (scene, local), roof height, scale
   let r = 0;
   const bounds = [Infinity, Infinity, -Infinity, -Infinity, 0];
   for (let b = 0; b < c.nB; b++) {
@@ -152,6 +153,18 @@ export function build(c, texBase, centre) {
       if (Math.abs(area) < 0.05) continue;
       if (area > 0 || !polys.length) polys.push({ ext: { a, n, ccw: area > 0 }, holes: [] });
       else polys[polys.length - 1].holes.push({ a, n });
+    }
+    // about two in five mid-rise residential and older commercial roofs carry a wooden water tank
+    if (polys.length && (c.cls[b] === 1 || c.cls[b] === 2) && h >= 16 && h <= 95) {
+      const hsh = Math.sin(c.ids[b] * 12.9898 + 78.233) * 43758.5453;
+      if (hsh - Math.floor(hsh) < 0.42) {
+        const e = polys[0].ext;
+        let mx = 0, my = 0;
+        for (let k = 0; k < e.n; k++) { mx += xs[e.a + k]; my += ys[e.a + k]; }
+        mx /= e.n; my /= e.n;
+        const area = Math.abs(signedArea(xs, ys, e.a, e.n));
+        tanks.push(abs ? mx - centre[0] : mx, abs ? centre[1] - my : -my, z1, Math.min(1.5, Math.max(0.8, Math.sqrt(area) / 22)));
+      }
     }
     for (const p of polys) {
       const all = [p.ext, ...p.holes];
@@ -230,7 +243,7 @@ export function build(c, texBase, centre) {
     }
   }
   return { pos: pos.subarray(0, vo * stride).slice(), nrm: nrm.slice(0, vo * 4), tex: tex.slice(0, vo), index, info, ids: Int32Array.from(c.ids),
-    trees, nVert: vo, bounds, ox: c.ox, oy: c.oy };
+    trees, tanks: Float32Array.from(tanks), nVert: vo, bounds, ox: c.ox, oy: c.oy };
 }
 
 
@@ -242,6 +255,7 @@ if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScop
     const out = build(c, texBase, centre);
     const transfer = [out.pos.buffer, out.nrm.buffer, out.tex.buffer, out.index.buffer, out.info.buffer, out.ids.buffer];
     if (out.trees) transfer.push(out.trees.buffer);
+    transfer.push(out.tanks.buffer);
     self.postMessage({ id, ok: true, out, abs: !!c.absolute }, transfer);
   } catch (err) {
     self.postMessage({ id, ok: false, error: String(err && err.message || err) });
