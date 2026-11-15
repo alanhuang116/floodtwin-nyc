@@ -490,6 +490,7 @@ class App {
     if (q.has('clean')) document.body.classList.add('clean');
     if (q.has('nolabels')) document.getElementById('labels').style.display = 'none';
     if (q.has('welcome')) this.ui.welcome();
+    if (q.has('nomarkers')) this.markers.group.visible = false;
     if (q.has('mode')) this.setMode(+q.get('mode'));
     if (q.has('run')) this.sim.play();
     this._lightKey = '';
@@ -509,7 +510,7 @@ class App {
         requestAnimationFrame(report); return;
       }
       const R = this.sim.results, s = this.sim.solver;
-      window.__qaReport?.({ ok: true, t: this.sim.t, status: this.sim.status, steps: n, ms: Math.round(performance.now() - t0), frames,
+      window.__qaReport?.({ ok: true, t: this.sim.t, stage: +this.sim.scenario.stage(this.sim.t).toFixed(3), status: this.sim.status, steps: n, ms: Math.round(performance.now() - t0), frames,
         wetKm2: +(s.wetCity / 1e6).toFixed(2), loss: R ? Math.round(R.loss) : null, wet: R?.wet, aboveFF: R?.aboveFF, hwmStats: R?.hwmStats,
         subwayFlooded: R?.subwayFlooded, city: { ...this.city.stats, readiness: +this.city.readiness().toFixed(2) },
         info: { calls: this.viewer.renderer.info.render.calls, triangles: this.viewer.renderer.info.render.triangles },
