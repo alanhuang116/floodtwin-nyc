@@ -10,11 +10,11 @@
 <meta property="og:image" content="https://alanhuang116.github.io/floodtwin-nyc/assets/og.jpg">
 <meta property="og:url" content="https://alanhuang116.github.io/floodtwin-nyc/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#090c0e">
+<meta name="theme-color" content="#f4f2ed">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
 <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
 </head>
@@ -33,10 +33,15 @@
   </div>
   <div class="transport">
     <button class="icon-btn panel-toggle" id="toggle-left" title="Scenario" aria-label="Scenario panel"><svg viewBox="0 0 16 16"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+    <div class="topbar-pill">
     <button class="icon-btn ghost" id="btn-restart" title="Restart (R)" aria-label="Restart"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.6-3.7M3 2.5v3h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    <button class="icon-btn play" id="btn-play" title="Run (Space)" aria-label="Run"><svg viewBox="0 0 16 16"><path d="M5 3.2v9.6c0 .4.4.6.7.4l7.4-4.8a.5.5 0 0 0 0-.8L5.7 2.8c-.3-.2-.7 0-.7.4Z" fill="currentColor"/></svg></button>
+    <div class="play-wrap">
+      <svg class="play-ring" viewBox="0 0 44 44" aria-hidden="true"><circle class="track" cx="22" cy="22" r="20.5"/><circle class="bar" id="play-ring" cx="22" cy="22" r="20.5" stroke-dasharray="128.8" stroke-dashoffset="128.8"/></svg>
+      <button class="icon-btn play" id="btn-play" title="Run (Space)" aria-label="Run"><svg viewBox="0 0 16 16"><path d="M5 3.2v9.6c0 .4.4.6.7.4l7.4-4.8a.5.5 0 0 0 0-.8L5.7 2.8c-.3-.2-.7 0-.7.4Z" fill="currentColor"/></svg></button>
+    </div>
     <div class="clock" id="clock">--:--<small id="clock-sub">Loading</small></div>
     <div class="seg speed-seg" id="speed" role="group" aria-label="Playback speed"></div>
+    </div>
     <button class="icon-btn panel-toggle" id="toggle-right" title="Results" aria-label="Results panel"><svg viewBox="0 0 16 16"><path d="M3 13V8M8 13V3M13 13V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
   </div>
   <div class="top-actions">
@@ -47,7 +52,7 @@
 </header>
 
 <aside class="panel left" id="panel-left" aria-label="Scenario">
-  <div class="panel-head"><span class="panel-title">Scenario</span><span class="badge" id="grid-badge">Grid</span></div>
+  <div class="panel-head"><span class="panel-title"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 10.5c1.5-1.3 3-1.3 4.5 0s3 1.3 4.5 0 2.3-1.1 3-.8M2 13.5c1.5-1.3 3-1.3 4.5 0s3 1.3 4.5 0 2.3-1.1 3-.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 2v5M5.8 4.8L8 7l2.2-2.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Scenario</span><span class="badge" id="grid-badge">Grid</span></div>
   <div class="panel-body" id="left-body"></div>
   <div class="apply-bar" id="apply-bar" hidden></div>
 </aside>
@@ -60,11 +65,15 @@
 
 <div class="viewmodes"><div class="seg" id="modes" role="group" aria-label="View"></div></div>
 <div class="legend overlay-card" id="legend" hidden></div>
+<div class="mapinfo" id="mapinfo" aria-hidden="true"><div class="scalebar"><span id="scale-text">1 km</span><i id="scale-bar" style="width:100px"></i></div><div class="coords" id="coords"></div></div>
+<div class="credits">Terrain and imagery USGS · Buildings NYC Open Data, © OpenStreetMap contributors · Gauges NOAA, USGS</div>
 <div class="city-loading overlay-card" id="city-loading" hidden><span class="spinner"></span><span>Loading buildings</span></div>
 <div class="camtools" id="camtools">
   <div class="views-menu overlay-card" id="views-menu" hidden></div>
   <button class="icon-btn" id="btn-views" title="Places" aria-label="Places"><svg viewBox="0 0 16 16"><path d="M8 14s-4.5-4.2-4.5-7.5a4.5 4.5 0 0 1 9 0C12.5 9.8 8 14 8 14Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8" cy="6.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></button>
+  <div class="sep"></div>
   <button class="icon-btn" id="btn-north" title="Face north" aria-label="Face north"><svg viewBox="0 0 16 16" class="compass" id="compass"><path d="M8 2l2.6 6H5.4Z" fill="#ffb547"/><path d="M8 14l-2.6-6h5.2Z" fill="currentColor" opacity=".55"/></svg></button>
+  <div class="sep"></div>
   <button class="icon-btn" id="btn-shot" title="Save image" aria-label="Save image"><svg viewBox="0 0 16 16"><path d="M2.5 5.5h2.2l1.2-1.8h4.2l1.2 1.8h2.2v7h-11Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8" cy="8.8" r="2.1" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></button>
 </div>
 <div class="timeline overlay-card" id="timeline"></div>

@@ -45,6 +45,28 @@ const ICON = {
   pause: '<svg viewBox="0 0 16 16"><rect x="4" y="3" width="2.6" height="10" rx=".6" fill="currentColor"/><rect x="9.4" y="3" width="2.6" height="10" rx=".6" fill="currentColor"/></svg>',
 };
 
+
+/** Moves a segmented control's thumb under its pressed button. */
+function placeThumb(wrap) {
+  const t = wrap.querySelector(':scope > .thumb'), b = wrap.querySelector(':scope > [aria-pressed="true"], :scope > [aria-selected="true"]');
+  if (!t || !b || !b.offsetWidth) return;
+  t.style.width = `${b.offsetWidth}px`;
+  t.style.transform = `translateX(${b.offsetLeft}px)`;
+  if (!wrap.classList.contains('ready')) requestAnimationFrame(() => wrap.classList.add('ready'));
+}
+function addThumb(wrap) {
+  wrap.prepend(h('span', { class: 'thumb', 'aria-hidden': 'true' }));
+  new ResizeObserver(() => placeThumb(wrap)).observe(wrap);
+  requestAnimationFrame(() => placeThumb(wrap));
+}
+
+/** Eases a number shown in an element towards a new value. */
+function tween(el, value, fmt) {
+  const txt = fmt(value);
+  if (el.textContent !== txt) el.textContent = txt;
+}
+
+
 const MODES = [
   { id: 0, name: 'Photo' }, { id: 1, name: 'Depth' }, { id: 2, name: 'Speed' }, { id: 3, name: 'Hazard' },
   { id: 4, name: 'Peak Depth' }, { id: 5, name: 'Arrival' }, { id: 6, name: 'Damage' },
@@ -76,7 +98,9 @@ function seg(options, value, onChange, cls = 'seg full') {
     wrap.appendChild(b);
     return b;
   });
-  wrap.set = (v) => btns.forEach((b, k) => b.setAttribute('aria-pressed', String(options[k].value === v)));
+  wrap.set = (v) => { btns.forEach((b, k) => b.setAttribute('aria-pressed', String(options[k].value === v))); placeThumb(wrap); };
+  btns.forEach(b => b.addEventListener('click', () => placeThumb(wrap)));
+  addThumb(wrap);
   return wrap;
 }
 
@@ -211,7 +235,8 @@ export class UI {
   _section(key, title, content, badge) {
     const sec = h('section', { class: `section${this.open[key] ? '' : ' closed'}` });
     const head = h('button', { type: 'button', class: 'section-head', 'aria-expanded': String(!!this.open[key]) },
-      h('span', { class: 'section-title', text: title }), h('span', { class: 'section-side' }, badge || null, h('span', { html: ICON.chev })));
+      h('span', { class: 'section-title', text: title }),
+      h('span', { class: 'section-side' }, badge || null, h('span', { html: ICON.chev })));
     head.addEventListener('click', () => { this.open[key] = !this.open[key]; sec.classList.toggle('closed', !this.open[key]); head.setAttribute('aria-expanded', String(this.open[key])); });
     sec.append(head, h('div', { class: 'section-body' }, content));
     return sec;
@@ -295,7 +320,7 @@ export class UI {
     out.push(h('div', { class: 'field' }, h('div', { class: 'field-row' }, h('span', { class: 'field-label', text: 'Light' })),
       seg([{ value: 'event', name: 'Event Clock' }, { value: 'day', name: 'Day' }, { value: 'dusk', name: 'Dusk' }, { value: 'night', name: 'Night' }], d.lighting, v => app.setLighting(v))));
     out.push(h('div', { class: 'field' }, h('div', { class: 'field-row' }, h('span', { class: 'field-label', text: 'Sky' })),
-      seg([{ value: 'auto', name: 'Auto' }, { value: 'clear', name: 'Clear' }, { value: 'overcast', name: 'Overcast' }, { value: 'storm', name: 'Storm' }], d.weather, v => app.setWeather(v))));
+      seg([{ value: 'auto', name: 'Auto' }, { value: 'clear', name: 'Clear' }, { value: 'partly', name: 'Cloudy' }, { value: 'storm', name: 'Storm' }], d.weather, v => app.setWeather(v))));
     const lay = [['buildings', '3D Buildings'], ['trees', 'Street Trees'], ['labels', 'Place Names'], ['tracers', 'Flow Tracers'], ['hwm', 'High-Water Marks'],
       ['subway', 'Subway Stations'], ['fema', 'FEMA Flood Zones'], ['sandy', 'Sandy Extent, 2012']];
     out.push(h('div', { class: 'layers' }, ...lay.map(([k, n]) => toggle(n, L[k], v => app.setLayer(k, v)))));
@@ -332,7 +357,7 @@ export class UI {
     const host = $('#tabs');
     this.tabBtns = {};
     for (const [k, n] of tabs) {
-      const b = h('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': String(k === this.tab), text: n, onclick: () => this.showTab(k) });
+      const b = h('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': String(k === this.tab), title: n, onclick: () => this.showTab(k) }, h('span', { text: n }));
       this.tabBtns[k] = b; host.appendChild(b);
     }
   }
@@ -358,16 +383,26 @@ export class UI {
     const app = this.app, sim = app.sim, R = sim.results, sc = sim.scenario;
     const p = presetById(app.state.preset);
     const name = app.state.preset === 'custom' ? 'Custom Event' : p.name;
-    const el = $('#headline');
+    let hl = this._hl;
+    if (!hl) {
+      hl = this._hl = {};
+      hl.name = h('span', { class: 'hl-name' }); hl.status = h('span', { class: 'hl-status' });
+      hl.bar = h('i'); hl.prog = h('div', { class: 'hl-progress' }, hl.bar);
+      hl.loss = h('span', { class: 'hl-value', text: '$0' }); hl.wet = h('span', { class: 'hl-value', text: '0' }); hl.area = h('span', { class: 'hl-value', text: '0.0 km²' });
+      $('#headline').replaceChildren(h('div', { class: 'hl-top' }, hl.name, hl.status), hl.prog,
+        h('div', { class: 'hl-figures' },
+          h('div', { class: 'hl-fig' }, h('span', { class: 'hl-label', text: 'Building Loss' }), hl.loss),
+          h('div', { class: 'hl-fig' }, h('span', { class: 'hl-label', text: 'Buildings Flooded' }), hl.wet),
+          h('div', { class: 'hl-fig' }, h('span', { class: 'hl-label', text: 'Flooded Land' }), hl.area)));
+    }
     const status = { idle: 'Ready', running: 'Running', paused: 'Paused', seeking: 'Computing', done: 'Complete', error: 'Stopped' }[sim.status] || sim.status;
-    const frac = sim.t / sc.duration;
-    el.replaceChildren(
-      h('div', { class: 'hl-top' }, h('span', { class: 'hl-name', text: name }), h('span', { class: `hl-status s-${sim.status}`, text: status })),
-      h('div', { class: 'hl-progress' }, h('i', { style: `width:${(frac * 100).toFixed(1)}%` })),
-      h('div', { class: 'hl-figures' },
-        h('div', { class: 'hl-fig' }, h('span', { class: 'hl-label', text: 'Building Loss' }), h('span', { class: 'hl-value', text: R ? fmtMoney(R.loss) : '$0' })),
-        h('div', { class: 'hl-fig' }, h('span', { class: 'hl-label', text: 'Buildings Flooded' }), h('span', { class: 'hl-value', text: R ? fmtInt(R.wet) : '0' })),
-        h('div', { class: 'hl-fig' }, h('span', { class: 'hl-label', text: 'Flooded Land' }), h('span', { class: 'hl-value', text: `${(sim.solver.wetCity / 1e6).toFixed(1)} km²` }))));
+    hl.name.textContent = name;
+    hl.status.textContent = status; hl.status.className = `hl-status s-${sim.status}`;
+    hl.bar.style.width = `${((sim.t / sc.duration) * 100).toFixed(1)}%`;
+    hl.prog.classList.toggle('live', sim.status === 'running' || sim.status === 'seeking');
+    tween(hl.loss, R ? R.loss : 0, fmtMoney);
+    tween(hl.wet, R ? R.wet : 0, fmtInt);
+    tween(hl.area, sim.solver.wetCity / 1e6, v => `${v.toFixed(1)} km²`);
   }
 
   _overview() {
@@ -377,7 +412,10 @@ export class UI {
     ov.big = h('div', { class: 'kpi-big', text: '$0' });
     ov.sub = h('div', { class: 'kpi-sub', text: '' });
     wrap.append(h('div', { class: 'kpi-hero' }, h('div', { class: 'kpi-label', text: 'Estimated Damage to Buildings and Contents' }), ov.big, ov.sub));
-    const kpi = (label, sub) => { const v = h('span', { class: 'kpi-value', text: '0' }); return [v, h('div', { class: 'kpi' }, h('span', { class: 'kpi-label', text: label }), v, h('span', { class: 'kpi-sub', text: sub }))]; };
+    const kpi = (label, sub) => {
+      const v = h('span', { class: 'kpi-value', text: '0' });
+      return [v, h('div', { class: 'kpi' }, h('span', { class: 'kpi-label', text: label }), v, h('span', { class: 'kpi-sub', text: sub }))];
+    };
     const [vWet, kWet] = kpi('Buildings Flooded', `Water at least ${Math.round(ENTRY_M * 100)} cm deep`);
     const [vFF, kFF] = kpi('Above First Floor', 'Water inside the living space');
     const [vRes, kRes] = kpi('Residents Affected', 'In homes flooded above the first floor');
@@ -402,12 +440,13 @@ export class UI {
   _updateOverview() {
     const ov = this._ov, app = this.app, sim = app.sim, R = sim.results;
     if (!ov) return;
-    ov.big.textContent = R ? fmtMoney(R.loss) : '$0';
+    tween(ov.big, R ? R.loss : 0, fmtMoney);
     ov.sub.textContent = R && R.loss > 0 ? `${fmtMoney(R.low)} to ${fmtMoney(R.high)} if every building sits at its 10th or 90th percentile damage` : 'No building has taken water yet';
-    ov.vWet.textContent = R ? fmtInt(R.wet) : '0';
-    ov.vFF.textContent = R ? fmtInt(R.aboveFF) : '0';
-    ov.vRes.textContent = R ? fmtInt(R.residents) : '0';
-    ov.vSub.textContent = R ? fmtInt(R.subwayFlooded) : '0';
+    tween(ov.vWet, R ? R.wet : 0, fmtInt);
+    tween(ov.vFF, R ? R.aboveFF : 0, fmtInt);
+    tween(ov.vRes, R ? R.residents : 0, fmtInt);
+    tween(ov.vSub, R ? R.subwayFlooded : 0, fmtInt);
+
     ov.peak.textContent = `Peak so far ${sim.maxArea.toFixed(1)} km²`;
     const top = R && R.loss > 0 ? [...R.nta.keys()].filter(k => R.nta[k] > 0).sort((a, b) => R.nta[b] - R.nta[a]).slice(0, 6) : [];
     const key = top.map(k => `${k}:${Math.round(R.nta[k] / 1e6)}`).join('|');
@@ -601,6 +640,9 @@ export class UI {
     if (sub !== this._clockSub) { this._clockSub = sub; $('#clock-sub').textContent = sub; }
     const v = app.viewer.currentView();
     this.compass.style.transform = `rotate(${-v.azim}deg)`;
+    this._scaleBar(now);
+    const ring = $('#play-ring');
+    if (ring) ring.style.strokeDashoffset = `${(128.8 * (1 - Math.min(1, sim.t / sc.duration))).toFixed(1)}`;
     if (now - this._lastFrameUI > 0.5) {
       this._lastFrameUI = now;
       this._headline();
@@ -614,7 +656,7 @@ export class UI {
       const r = app.city.readiness();
       const ld = $('#city-loading');
       ld.hidden = r > 0.98;
-      if (!ld.hidden) ld.querySelector('span').textContent = `Loading buildings ${Math.round(r * 100)}%`;
+      if (!ld.hidden) ld.querySelector('span:not(.spinner)').textContent = `Loading buildings ${Math.round(r * 100)}%`;
     }
   }
 
@@ -636,14 +678,39 @@ export class UI {
       if (g) { app.selectBuilding(null, false); app.setProbe({ x: g.x, y: g.y }); }
     });
     cv.addEventListener('dblclick', () => { if (app.tool === 'draw') app.finishDraft(); });
-    let hoverT = null;
+    let hoverT = null, coordT = 0;
     cv.addEventListener('pointermove', e => {
+      const now = performance.now();
+      if (now - coordT > 60) { coordT = now; this._coords(e); }
       hover.hidden = true;
       clearTimeout(hoverT);
       if (e.buttons || app.tool === 'draw') return;
       hoverT = setTimeout(() => this._hover(e), 160);
     });
     cv.addEventListener('pointerleave', () => { clearTimeout(hoverT); hover.hidden = true; });
+  }
+
+  /** A scale bar of round length for the ground at the centre of the view. */
+  _scaleBar(now) {
+    if (now - (this._lastScale || 0) < 0.2) return;
+    this._lastScale = now;
+    const v = this.app.viewer, cam = v.camera;
+    const d = cam.position.distanceTo(v.controls.target);
+    const mpp = (2 * d * Math.tan((cam.fov * Math.PI) / 360)) / Math.max(1, v.canvas.clientHeight);
+    const target = mpp * 110, pow = Math.pow(10, Math.floor(Math.log10(target)));
+    const nice = [1, 2, 5, 10].map(k => k * pow).reduce((a, b) => (Math.abs(b - target) < Math.abs(a - target) ? b : a));
+    $('#scale-bar').style.width = `${Math.round(nice / mpp)}px`;
+    $('#scale-text').textContent = nice >= 1000 ? `${nice / 1000} km` : `${nice} m`;
+  }
+
+  /** Latitude, longitude and ground height under the cursor. */
+  _coords(e) {
+    const app = this.app, cv = $('#view'), r = cv.getBoundingClientRect();
+    const g = app.viewer.groundAt(e.clientX - r.left, e.clientY - r.top);
+    const el = $('#coords');
+    if (!g) { el.textContent = ''; return; }
+    const [lon, lat] = app.geo.toLonLat(g.x, g.y);
+    el.textContent = `${lat.toFixed(4)}° N  ${Math.abs(lon).toFixed(4)}° W  ${g.z.toFixed(1)} m`;
   }
 
   _hover(e) {

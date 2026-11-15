@@ -334,7 +334,7 @@ class App {
 
   _hour() {
     const l = this.state.display.lighting, sc = this.sim.scenario;
-    if (l === 'day') return 13.5;
+    if (l === 'day') return 14.4;
     if (l === 'dusk') return 17.6;
     if (l === 'night') return 21.5;
     if (sc.clock === 'absolute') { const d = new Date(sc.start + this.sim.t * 1000 - 4 * 3600 * 1000); return d.getUTCHours() + d.getUTCMinutes() / 60; }
@@ -347,7 +347,8 @@ class App {
     const sc = this.sim.scenario;
     if (sc.rain(this.sim.t) > 0) return 'rain';
     // the storm sky builds with the surge and clears behind it
-    return sc.stage(this.sim.t) > 2.3 ? 'storm' : 'overcast';
+    const st = sc.stage(this.sim.t);
+    return st > 2.3 ? 'storm' : st > 1.9 ? 'overcast' : 'partly';
   }
 
   _updateLighting(force) {
@@ -356,10 +357,10 @@ class App {
     if (!force && key === this._lightKey) return;
     this._lightKey = key;
     this.viewer.setLighting(hour, weather);
-    const wind = { clear: 0.03, overcast: 0.07, rain: 0.14, storm: 0.26 }[weather];
+    const wind = { clear: 0.03, partly: 0.05, overcast: 0.07, rain: 0.14, storm: 0.26 }[weather];
     const ev = this.state.ev;
     const surge = ev.mode === 'replay' ? 1 : ev.mode === 'surge' ? Math.min(1, Math.max(0.35, (ev.peak - 1.5) / 1.6)) : 0;
-    this.water.uniforms.uStorm.value = Math.max(surge * 0.9, { clear: 0.12, overcast: 0.25, rain: 0.4, storm: 0.9 }[weather]);
+    this.water.uniforms.uStorm.value = Math.max(surge * 0.9, { clear: 0.12, partly: 0.18, overcast: 0.25, rain: 0.4, storm: 0.9 }[weather]);
     this.shared.uWind.value = Math.max(wind, surge * 0.2);
   }
 
@@ -488,6 +489,7 @@ class App {
     if (q.has('tab')) this.ui.showTab(q.get('tab'));
     if (q.has('clean')) document.body.classList.add('clean');
     if (q.has('nolabels')) document.getElementById('labels').style.display = 'none';
+    if (q.has('welcome')) this.ui.welcome();
     if (q.has('mode')) this.setMode(+q.get('mode'));
     if (q.has('run')) this.sim.play();
     this._lightKey = '';

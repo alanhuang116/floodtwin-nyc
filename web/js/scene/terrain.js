@@ -130,17 +130,33 @@ varying float vViewDist;
 uniform sampler2D uVis, uState, uStats, uBoro, uFema, uSandy, uDetail;
 uniform float uSimTime, uDryTime, uRainWet, uTEnd, uShowFema, uShowSandy, uNight, uHasDetail;
 uniform vec3 uApron;
-uniform vec2 uTexel;
+uniform vec2 uTexel, uDomain;
 uniform int uMode;
 ${detail ? 'varying vec2 vDetailUv;' : ''}
 ${RAMPS_GLSL}
-float code(sampler2D t, vec2 uv) { return floor(texture2D(t, uv).r * 255.0 + 0.5); }`)
+float code(sampler2D t, vec2 uv) { return floor(texture2D(t, uv).r * 255.0 + 0.5); }
+float th21(vec2 p) { p = fract(p * vec2(234.34, 435.345)); p += dot(p, p + 34.23); return fract(p.x * p.y); }
+float tnoise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(th21(i), th21(i + vec2(1, 0)), f.x), mix(th21(i + vec2(0, 1)), th21(i + vec2(1, 1)), f.x), f.y); }`)
         .replace('#include <map_fragment>', `
   vec4 sampledDiffuseColor = texture2D(map, vTUv);
   ${detail ? `vec4 dc = texture2D(uDetail, vDetailUv);
   float dw = uHasDetail * (1.0 - smoothstep(1800.0, 3200.0, vViewDist));
   sampledDiffuseColor.rgb = mix(sampledDiffuseColor.rgb, dc.rgb, dw);` : ''}
   diffuseColor *= sampledDiffuseColor;
+  {
+    // close to the camera the 2 m imagery is soft: add fine grain in keeping with what it shows,
+    // blades and clumps on green ground, aggregate on paving
+    float near = 1.0 - smoothstep(250.0, 1400.0, vViewDist);
+    if (near > 0.0) {
+      vec2 wp = vec2(vTUv.x * uDomain.x, vTUv.y * uDomain.y);
+      vec3 cc = diffuseColor.rgb;
+      float green = smoothstep(0.0, 0.05, cc.g - max(cc.r, cc.b));
+      float n1 = tnoise(wp * 2.3), n2 = tnoise(wp * 0.55 + 7.1);
+      float grain = mix(0.94 + 0.12 * n1, 0.82 + 0.3 * mix(n1, n2, 0.5), green);
+      diffuseColor.rgb *= mix(1.0, grain, near);
+    }
+  }
   // outside the five boroughs: muted context
   float inCity = step(0.5, code(uBoro, vTUv));
   float lum0 = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));

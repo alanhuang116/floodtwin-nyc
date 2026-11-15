@@ -28,6 +28,71 @@ void main() {
   gl_FragColor = vec4(-perspectiveDepthToViewZ(d, uNear, uFar), 0.0, 0.0, 1.0);
 }`;
 
+// Ambient obscurance at half resolution from the linear depth copy (Alchemy-style): for a
+// spiral of samples around each pixel, geometry above the surface's tangent plane darkens it.
+// The world radius grows with distance, so streets read the same from 100 m and from 10 km.
+const AO = /* glsl */`
+uniform sampler2D tDepth;
+uniform vec2 uTexel, uTan;
+uniform float uProj, uFar, uStrength;
+varying vec2 vUv;
+vec3 viewPos(vec2 uv) { float z = texture2D(tDepth, uv).r; return vec3((uv * 2.0 - 1.0) * uTan * z, -z); }
+float ign(vec2 p) { return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }
+void main() {
+  float z = texture2D(tDepth, vUv).r;
+  if (z <= 0.0 || z > 30000.0) { gl_FragColor = vec4(1.0); return; }
+  vec3 P = viewPos(vUv);
+  vec3 Pr = viewPos(vUv + vec2(uTexel.x, 0.0)), Pl = viewPos(vUv - vec2(uTexel.x, 0.0));
+  vec3 Pu = viewPos(vUv + vec2(0.0, uTexel.y)), Pd = viewPos(vUv - vec2(0.0, uTexel.y));
+  vec3 dx = abs(Pr.z - P.z) < abs(P.z - Pl.z) ? Pr - P : P - Pl;
+  vec3 dy = abs(Pu.z - P.z) < abs(P.z - Pd.z) ? Pu - P : P - Pd;
+  vec3 N = normalize(cross(dx, dy));
+  float R = clamp(z * 0.03, 1.5, 60.0);
+  float rPix = min(R * uProj / z, 110.0);
+  float ang = ign(gl_FragCoord.xy) * 6.2831853;
+  float occ = 0.0;
+  for (int i = 0; i < 12; i++) {
+    float t = (float(i) + 0.5) / 12.0;
+    float a = ang + float(i) * 2.3999632;
+    vec2 off = vec2(cos(a), sin(a)) * sqrt(t) * rPix * uTexel;
+    vec3 v = viewPos(vUv + off) - P;
+    float d2 = dot(v, v);
+    float fall = 1.0 - smoothstep(0.64 * R * R, 1.44 * R * R, d2);
+    occ += max(0.0, dot(v, N) - 0.012 * R) * R / (d2 + 0.02 * R * R) * fall;
+  }
+  float ao = clamp(1.0 - uStrength * occ / 12.0, 0.0, 1.0);
+  gl_FragColor = vec4(vec3(ao * ao), 1.0);
+}`;
+
+// Depth-aware blur of the obscurance (one axis per pass)
+const AO_BLUR = /* glsl */`
+uniform sampler2D tSrc, tDepth;
+uniform vec2 uDir;
+varying vec2 vUv;
+void main() {
+  float z0 = texture2D(tDepth, vUv).r;
+  float sum = 0.0, wsum = 0.0;
+  for (int i = -3; i <= 3; i++) {
+    vec2 uv = vUv + uDir * float(i);
+    float z = texture2D(tDepth, uv).r;
+    float w = exp(-float(i * i) / 8.0) * exp(-abs(z - z0) / max(0.02 * z0, 0.05));
+    sum += texture2D(tSrc, uv).r * w; wsum += w;
+  }
+  gl_FragColor = vec4(vec3(sum / max(wsum, 1e-4)), 1.0);
+}`;
+
+// Multiplies the obscurance into the opaque scene (blended as destination times source),
+// fading it out with distance so far haze stays clean
+const AO_APPLY = /* glsl */`
+uniform sampler2D tAO, tDepth;
+varying vec2 vUv;
+void main() {
+  float z = texture2D(tDepth, vUv).r;
+  float ao = texture2D(tAO, vUv).r;
+  float k = 1.0 - smoothstep(9000.0, 26000.0, z);
+  gl_FragColor = vec4(vec3(mix(1.0, ao, k)), 1.0);
+}`;
+
 const BRIGHT = /* glsl */`
 uniform sampler2D tSrc;
 uniform vec2 uTexel;
@@ -107,6 +172,8 @@ void main() {
   float l = luma(c);
   c = mix(vec3(l), c, uSat);
   c = clamp((c - 0.5) * uContrast + 0.5, 0.0, 1.0);
+  c = mix(c, c * c * (3.0 - 2.0 * c), 0.18);
+  c *= mix(vec3(0.985, 0.995, 1.015), vec3(1.025, 1.0, 0.965), smoothstep(0.12, 0.85, luma(c)));
   if (uRain > 0.001) {
     vec2 ruv = vUv * uAspect + uRainOffset;
     float r = rainLayer(ruv, 90.0, 9.0, 0.30, uTime) * 0.55 + rainLayer(ruv + 0.37, 55.0, 6.5, 0.26, uTime) * 0.75
@@ -123,9 +190,9 @@ void main() {
 
 // ratio: the highest device pixel ratio rendered; the frame-time governor scales below it
 export const QUALITY = {
-  high: { ratio: 1.5, shadow: 4096, refl: 0.5, bloom: true, fxaa: true, minScale: 0.7 },
-  balanced: { ratio: 1.15, shadow: 2048, refl: 0.33, bloom: true, fxaa: true, minScale: 0.62 },
-  performance: { ratio: 1.0, shadow: 1024, refl: 0, bloom: false, fxaa: true, minScale: 0.55 },
+  high: { ratio: 1.5, shadow: 4096, refl: 0.5, bloom: true, fxaa: true, minScale: 0.7, ao: true },
+  balanced: { ratio: 1.15, shadow: 2048, refl: 0.33, bloom: true, fxaa: true, minScale: 0.62, ao: true },
+  performance: { ratio: 1.0, shadow: 1024, refl: 0, bloom: false, fxaa: true, minScale: 0.55, ao: false },
 };
 
 class FullScreen {
@@ -180,6 +247,12 @@ export class Viewer {
     this.fs = new FullScreen(r);
     this.mCopy = pass(COPY, { tSrc: { value: null } });
     this.mDepth = pass(DEPTH, { tDepth: { value: null }, uNear: { value: 1 }, uFar: { value: 400000 } });
+    this.mAO = pass(AO, { tDepth: { value: null }, uTexel: { value: new THREE.Vector2() }, uTan: { value: new THREE.Vector2() },
+      uProj: { value: 1 }, uFar: { value: 400000 }, uStrength: { value: 1.7 } });
+    this.mAOBlur = pass(AO_BLUR, { tSrc: { value: null }, tDepth: { value: null }, uDir: { value: new THREE.Vector2() } });
+    this.mAOApply = pass(AO_APPLY, { tAO: { value: null }, tDepth: { value: null } });
+    Object.assign(this.mAOApply, { transparent: true, blending: THREE.CustomBlending, blendEquation: THREE.AddEquation,
+      blendSrc: THREE.DstColorFactor, blendDst: THREE.ZeroFactor });
     this.mBright = pass(BRIGHT, { tSrc: { value: null }, uTexel: { value: new THREE.Vector2() }, uThreshold: { value: 1.6 } });
     this.mBlur = pass(BLUR, { tSrc: { value: null }, uDir: { value: new THREE.Vector2() } });
     const black = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1); black.needsUpdate = true;
@@ -227,7 +300,7 @@ export class Viewer {
     const W = Math.round(w * ratio), H = Math.round(h * ratio);
     if (this.rtScene && this.rtScene.width === W && this.rtScene.height === H && this._reflScale === this.q.refl) { this.size = { w, h, W, H, ratio }; return; }
     this._reflScale = this.q.refl;
-    [this.rtScene, this.rtHalf, this.rtDepth, this.rtRefl, this.rtB1, this.rtB2, this.rtB3, this.rtB4].forEach(t => t?.dispose());
+    [this.rtScene, this.rtHalf, this.rtDepth, this.rtRefl, this.rtB1, this.rtB2, this.rtB3, this.rtB4, this.rtAO1, this.rtAO2].forEach(t => t?.dispose());
     const half = { type: THREE.HalfFloatType, format: THREE.RGBAFormat, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false };
     const dt = new THREE.DepthTexture(W, H, THREE.FloatType);
     this.rtScene = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, format: THREE.RGBAFormat, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthTexture: dt });
@@ -240,6 +313,9 @@ export class Viewer {
     const q4 = { ...half }, bw = Math.ceil(W / 4), bh = Math.ceil(H / 4);
     this.rtB1 = new THREE.WebGLRenderTarget(bw, bh, q4); this.rtB2 = new THREE.WebGLRenderTarget(bw, bh, q4);
     this.rtB3 = new THREE.WebGLRenderTarget(Math.ceil(bw / 2), Math.ceil(bh / 2), q4); this.rtB4 = new THREE.WebGLRenderTarget(Math.ceil(bw / 2), Math.ceil(bh / 2), q4);
+    const aoOpts = { type: THREE.UnsignedByteType, format: THREE.RGBAFormat, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false };
+    this.rtAO1 = new THREE.WebGLRenderTarget(Math.ceil(W / 2), Math.ceil(H / 2), aoOpts);
+    this.rtAO2 = new THREE.WebGLRenderTarget(Math.ceil(W / 2), Math.ceil(H / 2), aoOpts);
     this.mComposite.uniforms.uTexel.value.set(1 / W, 1 / H);
     this.mComposite.uniforms.uAspect.value.set(w / h, 1);
     this.size = { w, h, W, H, ratio };
@@ -339,12 +415,25 @@ export class Viewer {
     r.setRenderTarget(this.rtScene); r.clear(true, true, false);
     r.render(scene, cam);
 
-    // 3. copies for refraction and water thickness
-    this.mCopy.uniforms.tSrc.value = this.rtScene.texture;
-    this.fs.render(this.mCopy, this.rtHalf);
+    // 3. linear depth, ambient obscurance multiplied into the opaque scene, then the colour copy
     const md = this.mDepth.uniforms;
     md.tDepth.value = this.rtScene.depthTexture; md.uNear.value = cam.near; md.uFar.value = cam.far;
     this.fs.render(this.mDepth, this.rtDepth);
+    if (this.q.ao && this.aoOn !== false) {
+      const ua = this.mAO.uniforms, tanY = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
+      ua.tDepth.value = this.rtDepth.texture; ua.uTexel.value.set(1 / this.size.W, 1 / this.size.H);
+      ua.uTan.value.set(tanY * cam.aspect, tanY); ua.uProj.value = this.size.H / (2 * tanY);
+      this.fs.render(this.mAO, this.rtAO1);
+      const ub = this.mAOBlur.uniforms;
+      ub.tDepth.value = this.rtDepth.texture;
+      ub.tSrc.value = this.rtAO1.texture; ub.uDir.value.set(1 / this.rtAO1.width, 0); this.fs.render(this.mAOBlur, this.rtAO2);
+      ub.tSrc.value = this.rtAO2.texture; ub.uDir.value.set(0, 1 / this.rtAO1.height); this.fs.render(this.mAOBlur, this.rtAO1);
+      const up = this.mAOApply.uniforms;
+      up.tAO.value = this.rtAO1.texture; up.tDepth.value = this.rtDepth.texture;
+      this.fs.render(this.mAOApply, this.rtScene);
+    }
+    this.mCopy.uniforms.tSrc.value = this.rtScene.texture;
+    this.fs.render(this.mCopy, this.rtHalf);
 
     // 4. water
     if (w) {
@@ -491,4 +580,4 @@ export class Viewer {
   }
 }
 
-const WEATHER_DARK = { clear: 0, overcast: 0.3, storm: 0.9, rain: 0.6 };
+const WEATHER_DARK = { clear: 0, partly: 0.05, overcast: 0.3, storm: 0.9, rain: 0.6 };

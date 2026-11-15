@@ -108,11 +108,24 @@ export class Timeline {
       el('text', { x: M.l - 5, y: M.t + 10, class: 'tl-label', 'text-anchor': 'end' }, svg).textContent = 'Rain';
     }
     const path = pts => pts.map((p, i) => `${i ? 'L' : 'M'}${sx(p[0]).toFixed(1)},${sy(p[1]).toFixed(1)}`).join('');
+    // a soft wash under The Battery's curve
+    const defs = el('defs', {}, svg);
+    const lg = el('linearGradient', { id: 'tl-wash', x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+    el('stop', { offset: 0, style: 'stop-color: var(--series-1); stop-opacity: 0.30' }, lg);
+    el('stop', { offset: 1, style: 'stop-color: var(--series-1); stop-opacity: 0' }, lg);
+    el('path', { d: `${path(this.stage)}L${sx(D).toFixed(1)},${y1}L${sx(0).toFixed(1)},${y1}Z`, fill: 'url(#tl-wash)', stroke: 'none' }, svg);
     if (this.tide) el('path', { d: path(this.tide), fill: 'none', stroke: 'var(--series-2)', 'stroke-width': 1.25, 'stroke-dasharray': '3 3', 'stroke-linejoin': 'round', opacity: 0.9 }, svg);
-    ['var(--g2)', 'var(--g3)', 'var(--g4)'].forEach((c, q) => el('path', { d: path(this.others[q]), fill: 'none', stroke: c, 'stroke-width': 1.25, 'stroke-linejoin': 'round', opacity: 0.85 }, svg));
+    ['var(--g2)', 'var(--g3)', 'var(--g4)'].forEach((c, q) => el('path', { d: path(this.others[q]), fill: 'none', stroke: c, 'stroke-width': 1.25, 'stroke-linejoin': 'round', opacity: 0.8 }, svg));
     el('path', { d: path(this.stage), fill: 'none', stroke: 'var(--series-1)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
     const pk = this.peak;
     el('circle', { cx: sx(pk[0]), cy: sy(pk[1]), r: 3.5, fill: 'var(--series-1)', class: 'chart-dot' }, svg);
+    // the peak, named on the curve
+    const label = `Peak ${pk[1].toFixed(2)} m`, lw = label.length * 5.6 + 14;
+    const right = sx(pk[0]) + 10 + lw < W - M.r;
+    const lx = right ? sx(pk[0]) + 10 : sx(pk[0]) - 10 - lw, ly = Math.max(M.t, sy(pk[1]) - 18);
+    const g = el('g', { class: 'tl-peak' }, svg);
+    el('rect', { x: lx, y: ly, width: lw, height: 16, rx: 8 }, g);
+    el('text', { x: lx + lw / 2, y: ly + 11.5, 'text-anchor': 'middle' }, g).textContent = label;
     this.gSnaps = el('g', {}, svg);
     this.hoverLine = el('line', { y1: M.t, y2: y1, class: 'tl-hover', visibility: 'hidden' }, svg);
     this.head = el('line', { y1: M.t, y2: y1, class: 'tl-head' }, svg);

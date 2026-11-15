@@ -64,6 +64,7 @@ void main() {
 
 export const WEATHER = {
   clear: { cover: 0.28, dark: 0.0, fog: 0.000011, sun: 1.0 },
+  partly: { cover: 0.5, dark: 0.06, fog: 0.000013, sun: 0.86 },
   overcast: { cover: 0.74, dark: 0.18, fog: 0.000018, sun: 0.45 },
   storm: { cover: 0.94, dark: 0.55, fog: 0.000030, sun: 0.22 },
   rain: { cover: 0.90, dark: 0.55, fog: 0.000027, sun: 0.22 },

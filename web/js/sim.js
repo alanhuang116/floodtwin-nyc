@@ -249,7 +249,7 @@ export class Simulation {
   _log(force) {
     const s = this.solver, sc = this.scenario, r = this.results;
     const p = { t: this.t, stage: sc.stage(this.t), gauges: sc.gauges(this.t), rain: sc.rain(this.t), area: s.wetCity / 1e6, vol: s.volCity / 1e6,
-      wet: r?.wet ?? 0, loss: r ? r.loss : 0 };
+      wet: r?.wet ?? 0, loss: r ? r.loss : 0, aboveFF: r?.aboveFF ?? 0, res: r?.residents ?? 0, sub: r?.subwayFlooded ?? 0 };
     if (this.series.length && Math.abs(this.series.at(-1).t - p.t) < 1) this.series[this.series.length - 1] = p;
     else this.series.push(p);
     this.maxArea = Math.max(this.maxArea, p.area);
@@ -318,7 +318,10 @@ export class Simulation {
     idx.sort((a, c) => bl[c] - bl[a]);
     R.top = idx.slice(0, 20);
     this.results = R;
-    if (this.series.length) { const last = this.series.at(-1); if (Math.abs(last.t - tAt) < LOG_EVERY) { last.wet = R.wet; last.loss = R.loss; } }
+    if (this.series.length) {
+      const last = this.series.at(-1);
+      if (Math.abs(last.t - tAt) < LOG_EVERY) Object.assign(last, { wet: R.wet, loss: R.loss, aboveFF: R.aboveFF, res: R.residents, sub: R.subwayFlooded });
+    }
     this.emit('results', R);
   }
 

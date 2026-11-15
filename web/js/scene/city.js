@@ -14,7 +14,7 @@ const Q = 0.25;
 
 // quality presets: load radius (m), tree radius (m), loaded chunk budget, tree detail
 export const CITY_QUALITY = {
-  high: { radius: 9000, trees: 3200, budget: 170, treeDetail: 1 },
+  high: { radius: 8000, trees: 3200, budget: 150, treeDetail: 1 },
   balanced: { radius: 6500, trees: 2300, budget: 110, treeDetail: 1 },
   performance: { radius: 4200, trees: 1400, budget: 60, treeDetail: 0 },
 };
@@ -38,7 +38,7 @@ flat varying vec4 vInfo;
 flat varying vec3 vRoof;
 flat varying vec4 vDmg;
 flat varying float vTexId;
-flat varying float vRoofFlag;
+flat varying float vSurf;
 varying float vFacU;
 varying vec3 vWPos;`;
 
@@ -47,7 +47,7 @@ flat varying vec4 vInfo;
 flat varying vec3 vRoof;
 flat varying vec4 vDmg;
 flat varying float vTexId;
-flat varying float vRoofFlag;
+flat varying float vSurf;
 varying float vFacU;
 varying vec3 vWPos;
 uniform sampler2D uStats, uVis, uBed;
@@ -83,7 +83,8 @@ function buildingMaterial(u) {
     vRoof = vec3(floor(rp / 65536.0), mod(floor(rp / 256.0), 256.0), mod(rp, 256.0)) / 255.0;
     vDmg = texelFetch(uBDmg, tc, 0);
     vTexId = float(ti);
-    vRoofFlag = aU < -0.5 ? 1.0 : 0.0;
+    // surface code from the worker: facade (u >= 0), -1 flat roof, -2 plain masonry, -3 pitched roof
+    vSurf = aU < -2.5 ? 3.0 : aU < -1.5 ? 2.0 : aU < -0.5 ? 1.0 : 0.0;
     vFacU = aU * length(modelMatrix[0].xyz);
     vWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
   }`);
@@ -96,37 +97,55 @@ function buildingMaterial(u) {
     if (k > bayer4(gl_FragCoord.xy)) discard;
   }
   float cls = vInfo.x, bh = vInfo.y, g0 = vInfo.z, seed = vInfo.w;
-  bool roofFace = vRoofFlag > 0.5;
+  int surf = int(vSurf + 0.5);
+  bool roofFace = surf == 1 || surf == 3;
   bool tall = bh > 60.0;
-  bool curtain = tall && seed < 0.62 || (cls > 1.5 && cls < 2.5 && bh > 30.0 && seed < 0.4);
+  bool curtain = (tall && seed < 0.62) || (cls > 1.5 && cls < 2.5 && bh > 30.0 && seed < 0.4);
   float vh = vWPos.y - g0;
   vec3 albedo;
-  float glass = 0.0, lit = 0.0, metal = 0.0;
+  float glass = 0.0, lit = 0.0, metal = 0.0, rough = 0.86;
+  vec3 pN = vec3(0.0);
   float s1 = fract(seed * 7.13), s2 = fract(seed * 13.7), s3 = fract(seed * 29.3);
-  if (roofFace) {
+  // ---- palette by building class (sRGB, converted)
+  vec3 pal;
+  if (curtain) pal = s1 < 0.2 ? vec3(0.62, 0.65, 0.67) : s1 < 0.38 ? vec3(0.66, 0.61, 0.53) : s1 < 0.54 ? vec3(0.50, 0.45, 0.40)
+      : s1 < 0.70 ? vec3(0.48, 0.55, 0.53) : s1 < 0.86 ? vec3(0.40, 0.48, 0.56) : vec3(0.32, 0.34, 0.37);
+  else if (cls < 0.5) pal = s1 < 0.24 ? vec3(0.50, 0.30, 0.24) : s1 < 0.42 ? vec3(0.60, 0.33, 0.25) : s1 < 0.55 ? vec3(0.44, 0.31, 0.26)
+      : s1 < 0.68 ? vec3(0.71, 0.63, 0.51) : s1 < 0.84 ? vec3(0.80, 0.78, 0.72) : vec3(0.64, 0.66, 0.66);
+  else if (cls < 1.5) pal = s1 < 0.35 ? vec3(0.56, 0.36, 0.28) : s1 < 0.62 ? vec3(0.72, 0.64, 0.52) : s1 < 0.82 ? vec3(0.80, 0.76, 0.68) : vec3(0.62, 0.60, 0.57);
+  else if (cls < 2.5) pal = s1 < 0.45 ? vec3(0.76, 0.72, 0.64) : s1 < 0.75 ? vec3(0.64, 0.62, 0.59) : vec3(0.58, 0.44, 0.36);
+  else if (cls < 3.5) pal = s1 < 0.5 ? vec3(0.60, 0.60, 0.58) : s1 < 0.8 ? vec3(0.52, 0.55, 0.58) : vec3(0.64, 0.54, 0.44);
+  else if (cls < 4.5) pal = s1 < 0.5 ? vec3(0.78, 0.73, 0.64) : vec3(0.60, 0.38, 0.30);
+  else pal = vec3(0.58, 0.58, 0.56);
+  vec3 masonry = toLin(pal) * (0.88 + 0.24 * s2);
+  bool brick = !curtain && cls < 1.5 && pal.r > pal.g * 1.3;
+  if (surf == 1) {
+    // flat roof: membrane or gravel, mottled
     vec3 rc = toLin(vRoof);
     float l = dot(rc, vec3(0.3, 0.59, 0.11));
     albedo = mix(rc, vec3(l), 0.35) * (0.9 + 0.12 * vnoise(vWPos.xz * 0.35) + 0.06 * vnoise(vWPos.xz * 1.7));
     if (tall) albedo = mix(albedo, vec3(0.16, 0.165, 0.17), 0.3);
+    rough = 0.92;
+  } else if (surf == 3) {
+    // pitched roof: asphalt shingles laid in courses, each tab a slightly different shade
+    vec3 rc = toLin(vRoof);
+    vec3 shingle = mix(vec3(0.045, 0.045, 0.05), rc * 0.85, 0.6);
+    float cAA = clamp(1.5 - 9.0 * fwidth(vWPos.y / 0.2), 0.0, 1.0);
+    float course = fract(vWPos.y / 0.2);
+    float tabs = h21(floor(vec2((vWPos.x - vWPos.z) / 0.31 + floor(vWPos.y / 0.2) * 0.5, vWPos.y / 0.2)));
+    albedo = shingle * mix(1.0, (0.8 + 0.2 * smoothstep(0.0, 0.2, course)) * (0.88 + 0.24 * tabs), cAA);
+    albedo *= 0.9 + 0.14 * vnoise(vWPos.xz * 0.6);
+    rough = 0.93;
+  } else if (surf == 2) {
+    // plain masonry: parapets and their copings, stair and plant bulkheads
+    vec3 gn = normalize(cross(dFdx(vWPos), dFdy(vWPos)));
+    albedo = curtain || tall ? toLin(vec3(0.50, 0.51, 0.52)) : masonry * 0.9;
+    if (abs(gn.y) > 0.8) albedo = toLin(vec3(0.64, 0.62, 0.58)) * (0.9 + 0.15 * s3);
+    albedo *= 0.93 + 0.12 * vnoise(vWPos.xz * 0.8 + vWPos.y);
+    rough = 0.9;
   } else {
-    // ---- palette by building class (sRGB, converted)
-    vec3 pal;
-    if (curtain) {
-      pal = s1 < 0.3 ? vec3(0.40, 0.50, 0.56) : s1 < 0.55 ? vec3(0.46, 0.50, 0.54) : s1 < 0.75 ? vec3(0.52, 0.47, 0.42) : vec3(0.60, 0.64, 0.68);
-    } else if (cls < 0.5) {
-      pal = s1 < 0.24 ? vec3(0.50, 0.30, 0.24) : s1 < 0.42 ? vec3(0.60, 0.33, 0.25) : s1 < 0.55 ? vec3(0.44, 0.31, 0.26)
-          : s1 < 0.68 ? vec3(0.70, 0.62, 0.50) : s1 < 0.84 ? vec3(0.78, 0.76, 0.70) : vec3(0.62, 0.64, 0.64);
-    } else if (cls < 1.5) {
-      pal = s1 < 0.35 ? vec3(0.56, 0.36, 0.28) : s1 < 0.62 ? vec3(0.70, 0.62, 0.50) : s1 < 0.82 ? vec3(0.78, 0.74, 0.66) : vec3(0.60, 0.58, 0.55);
-    } else if (cls < 2.5) {
-      pal = s1 < 0.45 ? vec3(0.74, 0.70, 0.62) : s1 < 0.75 ? vec3(0.62, 0.60, 0.57) : vec3(0.56, 0.42, 0.34);
-    } else if (cls < 3.5) {
-      pal = s1 < 0.5 ? vec3(0.58, 0.58, 0.56) : s1 < 0.8 ? vec3(0.50, 0.53, 0.56) : vec3(0.62, 0.52, 0.42);
-    } else if (cls < 4.5) {
-      pal = s1 < 0.5 ? vec3(0.76, 0.71, 0.62) : vec3(0.58, 0.36, 0.28);
-    } else pal = vec3(0.56, 0.56, 0.54);
-    albedo = toLin(pal) * (0.88 + 0.24 * s2);
-    // ---- facade grid
+    // ---- facade
+    albedo = masonry;
     float floorH = curtain ? 3.9 : cls < 1.5 ? 3.0 + 0.2 * s3 : cls < 2.5 ? 3.9 : cls < 3.5 ? 5.0 : cls < 4.5 ? 4.2 : 2.8;
     float colW = curtain ? 1.5 : tall ? 2.0 : cls < 1.5 ? 2.5 + 0.4 * s2 : cls < 2.5 ? 2.6 : cls < 3.5 ? 4.0 : 3.0;
     float base = (cls > 1.5 && cls < 2.5) || (cls > 0.5 && cls < 1.5 && s3 > 0.55) ? 4.6 : 0.0;   // shopfront storey
@@ -134,40 +153,76 @@ function buildingMaterial(u) {
     float fy = (vh - base) / floorH, fx = vFacU / colW;
     float fl = floor(fy), cx = floor(fx);
     float px = fract(fx), py = fract(fy);
-    // fade the grid to its average once a window is smaller than a pixel or two
-    float aa = clamp(1.6 - 8.0 * max(fwidth(fx), fwidth(fy)), 0.0, 1.0);
-    float win = 0.0, cover = 0.0;
-    vec3 glassCol = curtain ? toLin(pal * 0.78) : vec3(0.035, 0.04, 0.045);
-    if (cls < 4.5 && vh > base && fl < floors) {
-      if (curtain) {
-        float mull = step(0.06, px) * step(px, 0.94) * step(0.10, py) * step(py, 0.97);
-        win = mull; cover = 0.8;
-      } else {
-        float ww = cls > 2.5 && cls < 3.5 ? 0.7 : tall ? 0.62 : 0.46, wh = cls > 2.5 && cls < 3.5 ? 0.45 : 0.56;
-        win = step(0.5 - ww * 0.5, px) * step(px, 0.5 + ww * 0.5) * step(0.28, py) * step(py, 0.28 + wh);
-        cover = ww * wh;
+    // fade the detail to its average once a window is smaller than a pixel or two
+    float aa = clamp(1.5 - 11.0 * max(fwidth(fx), fwidth(fy)), 0.0, 1.0);
+    aa *= aa;
+    // brick courses and their mortar, only close up
+    if (brick) {
+      float bAA = clamp(1.5 - 9.0 * max(fwidth(vh / 0.0762), fwidth(vFacU / 0.2032)), 0.0, 1.0);
+      if (bAA > 0.0) {
+        float by = vh / 0.0762, row = floor(by);
+        float bx = vFacU / 0.2032 + 0.5 * mod(row, 2.0);
+        float mort = max(1.0 - smoothstep(0.0, 0.14, fract(by)), 1.0 - smoothstep(0.0, 0.07, fract(bx)));
+        vec3 bcol = albedo * (0.84 + 0.32 * h21(vec2(floor(bx), row)));
+        albedo = mix(albedo, mix(bcol, toLin(vec3(0.62, 0.60, 0.56)) * 0.7, mort * 0.7), bAA);
       }
     }
-    if (base > 0.0 && vh > 0.3 && vh < base) {
-      float sx = fract(vFacU / 5.5);
-      win = step(0.06, sx) * step(sx, 0.94) * step(0.12, vh / base) * step(vh / base, 0.86);
-      cover = 0.7; fl = -1.0;
+    float win = 0.0, cover = 0.0, frame = 0.0, sill = 0.0;
+    float id = h21(vec2(cx + seed * 91.0, fl + seed * 37.0));
+    vec3 glassCol = vec3(0.03);
+    bool inGrid = cls < 4.5 && vh > base && fl < floors && fl >= 0.0;
+    if (curtain) {
+      // curtain wall: mullions, a spandrel band at every slab, panels that each tilt a little
+      glassCol = toLin(pal * 0.78) * (1.0 + (0.3 * id - 0.15) * aa);
+      if (inGrid) {
+        win = step(0.05, px) * step(px, 0.95) * step(0.13, py);
+        cover = 0.78; frame = 1.0 - win;
+      }
+      pN = vec3(id - 0.5, h21(vec2(cx, fl + 7.1)) - 0.5, fract(id * 9.7) - 0.5) * 0.06 * aa;
+    } else if (inGrid) {
+      float ww = cls > 2.5 && cls < 3.5 ? 0.7 : tall ? 0.62 : 0.46, wh = cls > 2.5 && cls < 3.5 ? 0.45 : 0.56;
+      float x0 = 0.5 - ww * 0.5, x1 = 0.5 + ww * 0.5, y0 = 0.28, y1 = 0.28 + wh;
+      float inR = step(x0, px) * step(px, x1) * step(y0, py) * step(py, y1);
+      float inG = step(x0 + 0.035, px) * step(px, x1 - 0.035) * step(y0 + 0.07, py) * step(py, y1 - 0.04);
+      win = inG; frame = inR - inG;
+      sill = step(y0 - 0.05, py) * step(py, y0) * step(x0 - 0.03, px) * step(px, x1 + 0.03);
+      cover = ww * wh;
+      // the top of each pane sits in the shadow of the window head; some have blinds drawn
+      float headShade = smoothstep(y1 - 0.24, y1 - 0.04, py);
+      glassCol = vec3(0.030, 0.034, 0.040) * (1.0 - 0.45 * headShade);
+      if (id > 0.82) glassCol = toLin(vec3(0.62, 0.58, 0.50)) * 0.42 * (1.0 - 0.3 * headShade);
     }
+    if (base > 0.0 && vh > 0.3 && vh < base) {
+      float sxp = fract(vFacU / 5.5), sy = vh / base;
+      win = step(0.06, sxp) * step(sxp, 0.94) * step(0.12, sy) * step(sy, 0.86);
+      frame = step(0.03, sxp) * step(sxp, 0.97) * step(0.08, sy) * step(sy, 0.9) - win;
+      cover = 0.7; fl = -1.0;
+      glassCol = vec3(0.04, 0.045, 0.05);
+    }
+    // frames: white or cream on masonry homes, dark bronze on offices and towers
+    vec3 frameCol = curtain ? toLin(vec3(0.20, 0.21, 0.22)) : cls > 1.5 ? toLin(vec3(0.24, 0.22, 0.20)) : toLin(vec3(0.86, 0.84, 0.78));
     float w = mix(cover, win, aa);
-    albedo = mix(albedo, glassCol, w * (curtain ? 1.0 : 0.88));
+    albedo = mix(albedo, frameCol, frame * aa * 0.9);
+    albedo = mix(albedo, toLin(vec3(0.74, 0.71, 0.65)), sill * aa * 0.8);
+    albedo = mix(albedo, glassCol, w * (curtain ? 1.0 : 0.92));
     glass = w;
-    metal = curtain ? 0.45 * w : 0.18 * w;
-    // cornice band on older masonry, darker spandrels on towers
-    if (!curtain && cls < 2.5 && bh < 45.0) albedo *= 1.0 - 0.25 * smoothstep(bh - 0.9, bh - 0.4, vh) * (1.0 - smoothstep(bh - 0.25, bh, vh));
-    // weathering and occlusion at the foot of the wall
-    albedo *= 0.94 + 0.06 * h21(floor(vec2(vFacU * 3.0, vh * 9.0)));
-    albedo *= mix(0.55, 1.0, smoothstep(-0.5, 4.0, vh));
+    metal = curtain ? 0.5 * w : 0.2 * w;
+    rough = mix(0.86, curtain ? 0.05 + 0.1 * id : 0.07 + 0.12 * id, glass);
+    // cornice on older masonry
+    if (!curtain && cls < 1.5 && bh < 45.0) {
+      float cor = smoothstep(bh - 1.1, bh - 0.7, vh) * (1.0 - smoothstep(bh - 0.3, bh + 0.2, vh));
+      albedo = mix(albedo, toLin(vec3(0.66, 0.63, 0.57)), 0.55 * cor);
+    }
+    // soot and rain streaks below the windows, and a stone plinth at the street
+    float streak = vnoise(vec2(vFacU * 0.9, vh * 0.12)) * vnoise(vec2(vFacU * 4.1, vh * 0.5));
+    albedo *= 1.0 - 0.16 * streak * (1.0 - glass);
+    albedo *= 1.0 - 0.05 * aa + 0.1 * aa * h21(floor(vec2(vFacU * 3.0, vh * 9.0)));
+    albedo = mix(albedo * 0.7, albedo, smoothstep(0.35, 0.8, vh));
+    albedo *= mix(0.62, 1.0, smoothstep(-0.5, 4.0, vh));
     // night: each building has its own share of lit windows; whole floors switch together in offices
     float occ = 0.12 + 0.38 * fract(seed * 53.7);
-    float id = h21(vec2(cx + seed * 91.0, fl + seed * 37.0));
     float floorOn = h21(vec2(fl * 1.7 + seed * 11.0, seed * 5.3));
     float on = curtain ? step(1.0 - occ, floorOn) * step(0.25, id) : step(1.0 - occ, id);
-    // far away, a coarse pattern of lit floors keeps the speckle instead of a flat glow
     float coarse = step(1.0 - occ, h21(vec2(floor(fy / 2.0) + seed * 7.0, floor(fx / 4.0) + seed * 3.0)));
     lit = mix(cover * coarse * 0.55, win * on * (0.55 + 0.9 * fract(id * 17.0)), aa) * step(vh, bh);
     if (base > 0.0 && vh < base) lit = win * 0.8;
@@ -202,7 +257,10 @@ function buildingMaterial(u) {
   if (selected) albedo = mix(albedo, vec3(0.95, 0.55, 0.16), 0.5);
   diffuseColor.rgb = albedo;`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-  roughnessFactor = mix(roughnessFactor, curtain ? 0.10 : 0.18, glass);`)
+  roughnessFactor = rough;`)
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+  // curtain-wall panels are never quite coplanar, which breaks up their reflections
+  normal = normalize(normal + (viewMatrix * vec4(pN, 0.0)).xyz);`)
       .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
   metalnessFactor = metal;`)
       .replace('#include <fog_fragment>', `#include <fog_fragment>
@@ -219,7 +277,7 @@ function buildingMaterial(u) {
   totalEmissiveRadiance += warm * lit * uNight * (1.0 - powerOut) * 1.5;
   if (selected) totalEmissiveRadiance += vec3(0.30, 0.15, 0.03);`);
   };
-  mat.customProgramCacheKey = () => 'nyc-building-v1';
+  mat.customProgramCacheKey = () => 'nyc-building-v2';
   return mat;
 }
 
@@ -251,36 +309,37 @@ function tankGeometry() {
 }
 
 function treeGeometry(detail) {
-  // a unit tree, 1 m tall: trunk to 0.42, a lumpy crown centred at 0.64
-  const crown = new THREE.IcosahedronGeometry(0.34, detail);
-  const p = crown.attributes.position;
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
-    const n = 1 + 0.16 * Math.sin(x * 17.1 + z * 9.3) * Math.cos(y * 13.7 + x * 5.1);
-    p.setXYZ(i, x * n, y * n * 1.12 + 0.64, z * n);
-  }
-  crown.computeVertexNormals();
-  const trunk = new THREE.CylinderGeometry(0.035, 0.05, 0.5, 5, 1, true);
-  trunk.translate(0, 0.25, 0);
-  const merge = (geos) => {
-    const out = new THREE.BufferGeometry();
-    const pos = [], nor = [], col = [], idx = [];
-    let base = 0;
-    for (const [g, c] of geos) {
-      const gi = g;
-      const P = gi.attributes.position, N = gi.attributes.normal;
-      for (let i = 0; i < P.count; i++) { pos.push(P.getX(i), P.getY(i), P.getZ(i)); nor.push(N.getX(i), N.getY(i), N.getZ(i)); col.push(...c); }
-      if (gi.index) for (let i = 0; i < gi.index.count; i++) idx.push(gi.index.getX(i) + base);
-      else for (let i = 0; i < P.count; i++) idx.push(i + base);
-      base += P.count;
+  // a unit tree, 1 m tall: a trunk, and a crown of two lumpy lobes, darker underneath
+  const parts = [];
+  for (const [rad, ox, oy, oz, tone] of [[0.33, 0, 0.63, 0, 1.0], [0.24, 0.11, 0.8, -0.07, 0.95]]) {
+    const g = new THREE.IcosahedronGeometry(rad, detail);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+      const n = 1 + 0.15 * Math.sin(x * 17.1 + z * 9.3 + ox * 40) * Math.cos(y * 13.7 + x * 5.1);
+      p.setXYZ(i, x * n + ox, y * n * 1.1 + oy, z * n + oz);
     }
-    out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-    out.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    out.setIndex(idx);
-    return out;
-  };
-  return merge([[crown, [1, 1, 1]], [trunk, [0.16, 0.12, 0.09]]]);
+    g.computeVertexNormals();
+    parts.push([g, (y) => { const k = tone * (0.5 + 0.5 * THREE.MathUtils.smoothstep(y, oy - rad, oy + rad * 0.8)); return [k, k, k]; }]);
+  }
+  const trunk = new THREE.CylinderGeometry(0.035, 0.05, 0.52, 6, 1, true);
+  trunk.translate(0, 0.26, 0);
+  parts.push([trunk, () => [0.15, 0.115, 0.085]]);
+  const pos = [], nor = [], col = [], idx = [];
+  let base = 0;
+  for (const [g, colour] of parts) {
+    const P = g.attributes.position, N = g.attributes.normal;
+    for (let i = 0; i < P.count; i++) { pos.push(P.getX(i), P.getY(i), P.getZ(i)); nor.push(N.getX(i), N.getY(i), N.getZ(i)); col.push(...colour(P.getY(i))); }
+    if (g.index) for (let i = 0; i < g.index.count; i++) idx.push(g.index.getX(i) + base);
+    else for (let i = 0; i < P.count; i++) idx.push(i + base);
+    base += P.count;
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  out.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  out.setIndex(idx);
+  return out;
 }
 
 export class City {
@@ -333,6 +392,22 @@ export class City {
 
     // ---- trees
     this.treeMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0, envMapIntensity: 0.6 });
+    this.treeMat.onBeforeCompile = (sh) => {
+      sh.uniforms.uTime = shared.uTime; sh.uniforms.uWind = shared.uWind;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uTime, uWind;')
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+#ifdef USE_INSTANCING
+  {
+    // crowns sway in the wind, more in a storm; each tree on its own phase
+    vec3 ip = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
+    float ph = dot(ip.xz, vec2(0.071, 0.113));
+    float amp = (0.006 + 0.035 * uWind) * smoothstep(0.35, 1.0, transformed.y);
+    transformed.x += amp * sin(uTime * 1.3 + ph);
+    transformed.z += amp * 0.7 * sin(uTime * 1.7 + ph * 1.3);
+  }
+#endif`);
+    };
+    this.treeMat.customProgramCacheKey = () => 'nyc-tree-v1';
     this.treeGeos = [treeGeometry(0), treeGeometry(1)];
     this.tankGeo = tankGeometry();
     this.tankMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0.05 });
