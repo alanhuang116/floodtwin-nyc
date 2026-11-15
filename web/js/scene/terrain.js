@@ -191,7 +191,7 @@ float code(sampler2D t, vec2 uv) { return floor(texture2D(t, uv).r * 255.0 + 0.5
   float lum = dot(diffuseColor.rgb, vec3(0.33));
   float pave = smoothstep(0.04, 0.16, lum) * (1.0 - smoothstep(0.03, 0.09, abs(diffuseColor.g - 0.5 * (diffuseColor.r + diffuseColor.b))));
   float dark = smoothstep(0.03, 0.12, st.x);              // flooded streets lose their lights
-  totalEmissiveRadiance += vec3(1.0, 0.58, 0.26) * uNight * (0.010 + pave * 0.10) * mix(0.6, 1.0, inCity) * (1.0 - dark);`);
+  totalEmissiveRadiance += vec3(1.0, 0.58, 0.26) * uNight * (0.003 + pave * 0.028) * mix(0.6, 1.0, inCity) * (1.0 - dark);`);
     };
     mat.customProgramCacheKey = () => (detail ? 'terrain-detail' : 'terrain');
     return mat;

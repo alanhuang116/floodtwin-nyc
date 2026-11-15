@@ -256,7 +256,9 @@ export class Viewer {
     this.sun.castShadow = L.sunIntensity > 0.25;
     this.hemi.color.copy(this.sky.uniforms.uZenith.value).lerp(new THREE.Color(0.75, 0.78, 0.8), 0.5);
     this.hemi.groundColor.setRGB(0.16, 0.13, 0.10).lerp(new THREE.Color(0.32, 0.20, 0.10), L.night * 0.6);
-    this.hemi.intensity = 0.22 + 0.7 * L.ambient;
+    // at night the cloud deck, lit by the city, fills the streets with a dim warm light
+    this.hemi.color.lerp(new THREE.Color(0.55, 0.47, 0.40), L.night * 0.35);
+    this.hemi.intensity = 0.22 + 0.7 * L.ambient + 0.12 * L.night;
     this.scene.fog.color.copy(L.fog);
     this.fogBase = L.fogDensity;
     s.uFogColor.value.copy(L.fog);

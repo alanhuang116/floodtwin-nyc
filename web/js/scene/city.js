@@ -215,8 +215,8 @@ function buildingMaterial(u) {
     gl_FragColor.rgb = mix(gl_FragColor.rgb, mix(uApron, fogColor, ffe), ef);
   }`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-  vec3 warm = cls > 1.5 && cls < 2.5 ? vec3(0.95, 0.88, 0.74) : vec3(1.0, 0.72, 0.42);
-  totalEmissiveRadiance += warm * lit * uNight * (1.0 - powerOut) * 2.6;
+  vec3 warm = cls > 1.5 && cls < 2.5 ? vec3(0.92, 0.82, 0.62) : vec3(1.0, 0.64, 0.32);
+  totalEmissiveRadiance += warm * lit * uNight * (1.0 - powerOut) * 1.5;
   if (selected) totalEmissiveRadiance += vec3(0.30, 0.15, 0.03);`);
   };
   mat.customProgramCacheKey = () => 'nyc-building-v1';

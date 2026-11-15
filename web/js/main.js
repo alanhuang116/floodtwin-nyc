@@ -75,7 +75,7 @@ function gpuInfo() {
 /** A first guess at what the device can do; the frame-time governor refines it while running. */
 function tierOf(name) {
   const n = (name || '').toLowerCase();
-  const small = Math.min(innerWidth, innerHeight) < 700 || /android|iphone|ipad/i.test(navigator.userAgent);
+  const small = Math.max(screen.width, screen.height) < 900 || /android|iphone|ipad|mobile/i.test(navigator.userAgent);
   if (/swiftshader|llvmpipe|software|basic render/.test(n) || small) return 'performance';
   if (/nvidia|geforce|rtx|gtx|quadro|radeon rx|radeon pro|rx \d{3,4}|arc\(tm\) a|arc a\d|apple m\d (pro|max|ultra)/.test(n)) return 'high';
   if (/apple m\d|apple gpu/.test(n)) return 'balanced';
@@ -234,7 +234,7 @@ class App {
       model: { dx: GRID_FOR[this.tier] || 40, drainage: p.p.drainage, infiltration: p.p.infiltration, nPaved: 0.030, nGreen: 0.045,
         porosity: true, theta: 0.8, frMax: 1.0, alpha: 0.7 },
       defences: { waterfront: { boros: [], crest: 4.0 }, barriers: [] },
-      display: { mode: 0, lighting: 'event', weather: 'auto', quality,
+      display: { mode: 0, lighting: 'day', weather: 'auto', quality,
         layers: { buildings: true, trees: true, labels: true, hwm: true, subway: true, tracers: true, fema: false, sandy: false } },
       speed: 900,
     };
